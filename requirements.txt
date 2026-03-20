@@ -1,0 +1,11 @@
+# line-bot-sdk は aiohttp==3.8.4 を固定要求するが Python 3.12 でビルド不可。
+# 下記コマンドでインストールすること（requirements.txt では pip install -r は使わない）:
+#   pip install line-bot-sdk==2.4.3 --no-deps
+#   pip install "aiohttp>=3.9.0" future fastapi "uvicorn[standard]" python-dotenv httpx requests
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.0
+httpx>=0.27.0
+requests>=2.31.0
+aiohttp>=3.9.0
+future
