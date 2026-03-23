@@ -5,7 +5,8 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-BACKEND_BASE_URL = os.getenv("BACKEND_API_URL", "https://100v9train.f5.si")
+BACKEND_BASE_URL   = os.getenv("BACKEND_API_URL",      "https://100v9train.f5.si")
+INTERNAL_TOKEN     = os.getenv("BACKEND_API_TOKEN",    "")
 
 
 def _login(line_user_id: str) -> str:
@@ -92,6 +93,24 @@ def send_seat_request(*, line_user_id: str, train_id: str, car_number: str) -> b
     except Exception as exc:
         logger.error("Failed to send seat request: %s", exc)
     return False
+
+
+def get_internal_messages() -> list:
+    """バックエンドから新着メッセージ一覧を取得する。"""
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get(
+                f"{BACKEND_BASE_URL}/internal/messages",
+                headers={"Authorization": f"Bearer {INTERNAL_TOKEN}"},
+            )
+        response.raise_for_status()
+        messages = response.json().get("messages", [])
+        if messages:
+            logger.info("Internal messages: %s", messages)
+        return messages
+    except Exception as exc:
+        logger.error("Failed to get internal messages: %s", exc)
+    return []
 
 
 def get_match_list(*, line_user_id: str) -> list | None:

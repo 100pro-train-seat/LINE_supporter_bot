@@ -92,6 +92,16 @@ def reply_request_failed() -> TextSendMessage:
     return TextSendMessage(text="❌ リクエストの送信に失敗しました。\nしばらく経ってから再度お試しください。")
 
 
+# ── プッシュ通知 ──────────────────────────────────────────────────
+
+def push_give() -> TextSendMessage:
+    return TextSendMessage(text="🚃 同じ電車に席に座りたい人がいます。\n「依頼確認」で依頼を確認してください。")
+
+
+def push_thanks() -> TextSendMessage:
+    return TextSendMessage(text="🙏 先ほど席を譲った人からお礼が届きました。\nありがとうございました！")
+
+
 # ── 共通 ──────────────────────────────────────────────────────────
 
 def reply_error() -> TextSendMessage:

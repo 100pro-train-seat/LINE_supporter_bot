@@ -1,5 +1,7 @@
 import logging
 import os
+import threading
+import time
 
 from dotenv import load_dotenv
 
@@ -12,6 +14,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 from api_client import (
     find_most_supporter_car,
+    get_internal_messages,
     get_match_list,
     register_supporter_seat,
     send_seat_request,
@@ -25,6 +28,8 @@ from messages import (
     ask_seat_row,
     ask_taker_train_id,
     ask_train_id,
+    push_give,
+    push_thanks,
     reply_cancelled,
     reply_default,
     reply_error,
@@ -46,6 +51,35 @@ line_bot_api = LineBotApi(os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
 handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
 sessions: dict = {}
+
+# バックグラウンドでポーリングを開始
+threading.Thread(target=_poll_internal_messages, daemon=True).start()
+
+PUSH_HANDLERS = {
+    "give":   push_give,
+    "thanks": push_thanks,
+}
+
+POLLING_INTERVAL = 5  # 秒
+
+
+def _poll_internal_messages():
+    """バックグラウンドで定期的に内部メッセージを確認し、LINE にプッシュ通知する。"""
+    while True:
+        try:
+            for msg in get_internal_messages():
+                uid      = msg.get("line_user_id")
+                msg_type = msg.get("type")
+                handler_fn = PUSH_HANDLERS.get(msg_type)
+                if uid and handler_fn:
+                    line_bot_api.push_message(uid, handler_fn())
+                    logger.info("Pushed %s to %s", msg_type, uid)
+                else:
+                    logger.warning("Unknown message type: %s", msg_type)
+        except Exception as exc:
+            logger.error("Polling error: %s", exc)
+        time.sleep(POLLING_INTERVAL)
+
 
 SUPPORTER_KEYWORDS  = {"乗車情報登録", "登録", "register", "start"}
 CANDIDATE_KEYWORDS  = {"号車を探す", "席を探す", "テイカー", "find", "search"}
