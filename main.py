@@ -140,6 +140,7 @@ def handle_message(event: MessageEvent) -> None:
     elif step == "confirm":
         if text == "✅ 登録する":
             success = register_supporter_seat(
+                line_user_id=user_id,
                 train_id=session["train_id"],
                 car_number=session["car_number"],
                 seat_number=session["seat_number"],
