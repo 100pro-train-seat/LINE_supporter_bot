@@ -53,7 +53,7 @@ def ask_taker_train_id() -> TextSendMessage:
 
 def reply_taker_result(train_id: str, car_number: int) -> TextSendMessage:
     return TextSendMessage(
-        text=f"✅ 見つかりました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車 に乗ってください"
+        text=f"✅ 確認しました。\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車 がおすすめです"
     )
 
 
