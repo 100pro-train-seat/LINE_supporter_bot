@@ -26,13 +26,16 @@ if not TOKEN:
 BASE         = "https://api.line.me/v2/bot"
 HEADERS_JSON = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
 
-# リッチメニューのレイアウト定義（横3分割）
+# リッチメニューのレイアウト定義（2×2）
 #
-#  ┌──────────────┬──────────────┬──────────────┐
-#  │  乗車状況    │  乗車状況    │  座席        │
-#  │  を登録      │  問い合わせ  │  リクエスト  │
-#  │ （サポーター）│ （テイカー） │ （テイカー） │
-#  └──────────────┴──────────────┴──────────────┘
+#  ┌─────────────────┬─────────────────┐
+#  │  乗車状況を登録  │ ランクを確認する │
+#  │  （サポーター）  │ （サポーター）  │
+#  ├─────────────────┼─────────────────┤
+#  │  乗車状況        │  座席            │
+#  │  問い合わせ      │  リクエスト      │
+#  │  （テイカー）    │  （テイカー）    │
+#  └─────────────────┴─────────────────┘
 RICH_MENU_BODY = {
     "size": {"width": 2500, "height": 843},
     "selected": True,
@@ -40,15 +43,19 @@ RICH_MENU_BODY = {
     "chatBarText": "メニューを開く",
     "areas": [
         {
-            "bounds": {"x": 0, "y": 0, "width": 833, "height": 843},
+            "bounds": {"x": 0, "y": 0, "width": 1250, "height": 421},
             "action": {"type": "message", "label": "乗車状況を登録", "text": "登録"},
         },
         {
-            "bounds": {"x": 833, "y": 0, "width": 833, "height": 843},
+            "bounds": {"x": 1250, "y": 0, "width": 1250, "height": 421},
+            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認する"},
+        },
+        {
+            "bounds": {"x": 0, "y": 421, "width": 1250, "height": 422},
             "action": {"type": "message", "label": "乗車状況問い合わせ", "text": "号車を探す"},
         },
         {
-            "bounds": {"x": 1666, "y": 0, "width": 834, "height": 843},
+            "bounds": {"x": 1250, "y": 421, "width": 1250, "height": 422},
             "action": {"type": "message", "label": "座席リクエスト", "text": "座席リクエスト"},
         },
     ],

@@ -85,6 +85,7 @@ SUPPORTER_KEYWORDS  = {"乗車情報登録", "登録", "register", "start"}
 CANDIDATE_KEYWORDS  = {"号車を探す", "席を探す", "テイカー", "find", "search"}
 REQUEST_KEYWORDS    = {"座席リクエスト", "リクエスト"}
 CHECK_KEYWORDS      = {"依頼確認"}
+RANK_KEYWORDS       = {"ランクを確認する"}
 CANCEL_KEYWORDS     = {"キャンセル", "cancel", "中断", "やめる"}
 
 
@@ -137,6 +138,12 @@ def handle_message(event: MessageEvent):
     if text in REQUEST_KEYWORDS:
         sessions[user_id] = {"step": "request_train_id"}
         reply(token, ask_train_id())
+        return
+
+    # サポーター：ランク確認（準備中）
+    if text in RANK_KEYWORDS:
+        from linebot.models import TextSendMessage as TSM
+        reply(token, TSM(text="🏅 ランク確認機能は準備中です。\nしばらくお待ちください。"))
         return
 
     # サポーター：依頼確認（一発取得）
