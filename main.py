@@ -37,7 +37,7 @@ handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 sessions: dict = {}
 
 SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
-TAKER_KEYWORDS     = {"席を探す", "テイカー", "find", "search"}
+TAKER_KEYWORDS     = {"号車を探す", "席を探す", "テイカー", "find", "search"}
 CANCEL_KEYWORDS    = {"キャンセル", "cancel", "中断", "やめる"}
 
 
