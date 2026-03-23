@@ -52,9 +52,6 @@ handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
 sessions: dict = {}
 
-# バックグラウンドでポーリングを開始
-threading.Thread(target=_poll_internal_messages, daemon=True).start()
-
 PUSH_HANDLERS = {
     "give":   push_give,
     "thanks": push_thanks,
@@ -80,6 +77,9 @@ def _poll_internal_messages():
             logger.error("Polling error: %s", exc)
         time.sleep(POLLING_INTERVAL)
 
+
+# バックグラウンドでポーリングを開始（関数定義の後に記述）
+threading.Thread(target=_poll_internal_messages, daemon=True).start()
 
 SUPPORTER_KEYWORDS  = {"乗車情報登録", "登録", "register", "start"}
 CANDIDATE_KEYWORDS  = {"号車を探す", "席を探す", "テイカー", "find", "search"}
