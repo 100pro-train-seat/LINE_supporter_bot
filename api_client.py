@@ -16,7 +16,11 @@ def _request(method: str, path: str, token: str = "", **kwargs):
         with httpx.Client(timeout=10.0) as client:
             response = getattr(client, method)(f"{BASE_URL}{path}", headers=headers, **kwargs)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if not data.get("ok", True):
+            logger.error("%s %s error: %s", method.upper(), path, data.get("error", "unknown error"))
+            return None
+        return data
     except Exception as exc:
         logger.error("%s %s failed: %s", method.upper(), path, exc)
         return None
