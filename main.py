@@ -15,6 +15,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from api_client import (
     find_most_supporter_car,
     get_internal_messages,
+    get_last_error,
     get_match_list,
     register_supporter_seat,
     send_seat_request,
@@ -32,11 +33,9 @@ from messages import (
     push_thanks,
     reply_cancelled,
     reply_default,
-    reply_error,
     reply_match_accepted,
     reply_match_empty,
     reply_match_list,
-    reply_request_failed,
     reply_request_sent,
     reply_success,
     reply_taker_not_found,
@@ -65,14 +64,11 @@ def _poll_internal_messages():
     while True:
         try:
             for msg in get_internal_messages():
-                uid      = msg.get("line_user_id")
-                msg_type = msg.get("type")
-                handler_fn = PUSH_HANDLERS.get(msg_type)
+                uid        = msg.get("line_user_id")
+                handler_fn = PUSH_HANDLERS.get(msg.get("type"))
                 if uid and handler_fn:
                     line_bot_api.push_message(uid, handler_fn())
-                    logger.info("Pushed %s to %s", msg_type, uid)
-                else:
-                    logger.warning("Unknown message type: %s", msg_type)
+                    logger.info("Pushed %s to %s", msg.get("type"), uid)
         except Exception as exc:
             logger.error("Polling error: %s", exc)
         time.sleep(POLLING_INTERVAL)
@@ -81,16 +77,20 @@ def _poll_internal_messages():
 # バックグラウンドでポーリングを開始（関数定義の後に記述）
 threading.Thread(target=_poll_internal_messages, daemon=True).start()
 
-SUPPORTER_KEYWORDS  = {"乗車情報登録", "登録", "register", "start"}
-CANDIDATE_KEYWORDS  = {"号車を探す", "席を探す", "テイカー", "find", "search"}
-REQUEST_KEYWORDS    = {"座席リクエスト", "リクエスト"}
-CHECK_KEYWORDS      = {"依頼確認"}
-RANK_KEYWORDS       = {"ランクを確認する"}
-CANCEL_KEYWORDS     = {"キャンセル", "cancel", "中断", "やめる"}
+SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
+CANDIDATE_KEYWORDS = {"号車を探す", "席を探す", "テイカー", "find", "search"}
+REQUEST_KEYWORDS   = {"座席リクエスト", "リクエスト"}
+CHECK_KEYWORDS     = {"依頼確認"}
+RANK_KEYWORDS      = {"ランクを確認する"}
+CANCEL_KEYWORDS    = {"キャンセル", "cancel", "中断", "やめる"}
 
 
 def reply(token, message):
     line_bot_api.reply_message(token, message)
+
+
+def reply_error(token):
+    reply(token, TextSendMessage(text=f"❌ {get_last_error()}"))
 
 
 @app.get("/health")
@@ -142,15 +142,14 @@ def handle_message(event: MessageEvent):
 
     # サポーター：ランク確認（準備中）
     if text in RANK_KEYWORDS:
-        from linebot.models import TextSendMessage as TSM
-        reply(token, TSM(text="🏅 ランク確認機能は準備中です。\nしばらくお待ちください。"))
+        reply(token, TextSendMessage(text="🏅 ランク確認機能は準備中です。\nしばらくお待ちください。"))
         return
 
-    # サポーター：依頼確認（一発取得）
+    # サポーター：依頼確認
     if text in CHECK_KEYWORDS:
         asking = get_match_list(line_user_id=user_id)
         if asking is None:
-            reply(token, reply_error())
+            reply_error(token)
         elif len(asking) == 0:
             reply(token, reply_match_empty())
         else:
@@ -161,7 +160,6 @@ def handle_message(event: MessageEvent):
     if text.startswith("受理する "):
         asking_id = text.split(" ", 1)[1]
         # TODO: バックエンドの受理エンドポイントが提供され次第、ここに実装する
-        # 例: accept_match(line_user_id=user_id, asking_id=asking_id)
         logger.info("Accept request – user=%s asking_id=%s", user_id, asking_id)
         reply(token, reply_match_accepted())
         return
@@ -175,7 +173,7 @@ def handle_message(event: MessageEvent):
 
     # ── 候補問い合わせフロー ──────────────────────────────────────
     if step == "taker_train_id":
-        train_id = text
+        train_id   = text
         sessions.pop(user_id, None)
         car_number = find_most_supporter_car(line_user_id=user_id, train_id=train_id)
         if car_number is not None:
@@ -197,7 +195,7 @@ def handle_message(event: MessageEvent):
                 car_number=text,
             )
             sessions.pop(user_id, None)
-            reply(token, reply_request_sent() if success else reply_request_failed())
+            reply(token, reply_request_sent() if success else TextSendMessage(text=f"❌ {get_last_error()}"))
         else:
             reply(token, ask_request_carriage())
 
@@ -241,7 +239,7 @@ def handle_message(event: MessageEvent):
                 seat_number=session["seat_number"],
             )
             sessions.pop(user_id, None)
-            reply(token, reply_success(session) if success else reply_error())
+            reply(token, reply_success(session) if success else TextSendMessage(text=f"❌ {get_last_error()}"))
 
         elif text == "🔄 やり直す":
             sessions[user_id] = {"step": "train_id"}

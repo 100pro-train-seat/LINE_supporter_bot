@@ -74,7 +74,7 @@ def ask_request_carriage() -> TextSendMessage:
 
 def reply_taker_result(train_id: str, car_number: int) -> TextSendMessage:
     return TextSendMessage(
-        text=f"✅ 確認しました。\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車 がおすすめです"
+        text=f"✅ 乗車状況を確認しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車 がおすすめです"
     )
 
 
@@ -88,10 +88,6 @@ def reply_request_sent() -> TextSendMessage:
     return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。")
 
 
-def reply_request_failed() -> TextSendMessage:
-    return TextSendMessage(text="❌ リクエストの送信に失敗しました。\nしばらく経ってから再度お試しください。")
-
-
 # ── プッシュ通知 ──────────────────────────────────────────────────
 
 def push_give() -> TextSendMessage:
@@ -103,10 +99,6 @@ def push_thanks() -> TextSendMessage:
 
 
 # ── 共通 ──────────────────────────────────────────────────────────
-
-def reply_error() -> TextSendMessage:
-    return TextSendMessage(text="❌ 登録に失敗しました。しばらく経ってから再度お試しください。")
-
 
 def reply_default() -> TextSendMessage:
     return TextSendMessage(text='メニューから機能を選択するか、「登録」または「席を探す」と入力してください。')

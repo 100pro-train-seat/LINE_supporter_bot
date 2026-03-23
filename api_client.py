@@ -8,9 +8,16 @@ logger = logging.getLogger(__name__)
 BASE_URL       = os.getenv("BACKEND_API_URL",   "https://100v9train.f5.si")
 INTERNAL_TOKEN = os.getenv("BACKEND_API_TOKEN", "")
 
+_last_error: str = "エラーが発生しました。"
+
+
+def get_last_error() -> str:
+    return _last_error
+
 
 def _request(method: str, path: str, token: str = "", **kwargs):
     """HTTPリクエストを送り、レスポンスのJSONを返す。失敗時は None。"""
+    global _last_error
     headers = {"Authorization": f"Bearer {token or INTERNAL_TOKEN}"}
     try:
         with httpx.Client(timeout=10.0) as client:
@@ -18,10 +25,12 @@ def _request(method: str, path: str, token: str = "", **kwargs):
         response.raise_for_status()
         data = response.json()
         if not data.get("ok", True):
-            logger.error("%s %s error: %s", method.upper(), path, data.get("error", "unknown error"))
+            _last_error = data.get("error", "エラーが発生しました。")
+            logger.error("%s %s error: %s", method.upper(), path, _last_error)
             return None
         return data
     except Exception as exc:
+        _last_error = "通信エラーが発生しました。"
         logger.error("%s %s failed: %s", method.upper(), path, exc)
         return None
 
