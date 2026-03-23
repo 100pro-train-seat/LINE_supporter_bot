@@ -10,18 +10,21 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
-from api_client import register_supporter_seat
+from api_client import find_most_supporter_car, register_supporter_seat
 from messages import (
     VALID_SEAT_COLUMNS,
     ask_carriage,
     ask_confirm,
     ask_seat_column,
     ask_seat_row,
+    ask_taker_train_id,
     ask_train_id,
     reply_cancelled,
     reply_default,
     reply_error,
     reply_success,
+    reply_taker_not_found,
+    reply_taker_result,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s – %(message)s")
@@ -31,11 +34,11 @@ app = FastAPI()
 line_bot_api = LineBotApi(os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
 handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
-# ユーザーごとの会話状態を保持する辞書
 sessions: dict = {}
 
-TRIGGER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
-CANCEL_KEYWORDS  = {"キャンセル", "cancel", "中断", "やめる"}
+SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
+TAKER_KEYWORDS     = {"席を探す", "テイカー", "find", "search"}
+CANCEL_KEYWORDS    = {"キャンセル", "cancel", "中断", "やめる"}
 
 
 def reply(token, message):
@@ -71,10 +74,16 @@ def handle_message(event: MessageEvent):
         reply(token, reply_cancelled())
         return
 
-    # 登録フロー開始
-    if text in TRIGGER_KEYWORDS:
+    # サポーター登録フロー開始
+    if text in SUPPORTER_KEYWORDS:
         sessions[user_id] = {"step": "train_id"}
         reply(token, ask_train_id())
+        return
+
+    # テイカーフロー開始
+    if text in TAKER_KEYWORDS:
+        sessions[user_id] = {"step": "taker_train_id"}
+        reply(token, ask_taker_train_id())
         return
 
     # セッションなし
@@ -84,13 +93,22 @@ def handle_message(event: MessageEvent):
 
     step = session["step"]
 
-    # Step 1: 列車ID
-    if step == "train_id":
+    # ── テイカーフロー ────────────────────────────────────────────
+    if step == "taker_train_id":
+        train_id = text
+        sessions.pop(user_id, None)
+        car_number = find_most_supporter_car(line_user_id=user_id, train_id=train_id)
+        if car_number is not None:
+            reply(token, reply_taker_result(train_id, car_number))
+        else:
+            reply(token, reply_taker_not_found(train_id))
+
+    # ── サポーターフロー ──────────────────────────────────────────
+    elif step == "train_id":
         session["train_id"] = text
         session["step"]     = "carriage"
         reply(token, ask_carriage())
 
-    # Step 2: 号車
     elif step == "carriage":
         if text.isdigit() and 1 <= int(text) <= 6:
             session["car_number"] = text
@@ -99,7 +117,6 @@ def handle_message(event: MessageEvent):
         else:
             reply(token, ask_carriage())
 
-    # Step 3: 座席列（A〜E）
     elif step == "seat_column":
         col = text.upper()
         if col in VALID_SEAT_COLUMNS:
@@ -109,7 +126,6 @@ def handle_message(event: MessageEvent):
         else:
             reply(token, ask_seat_column())
 
-    # Step 4: 座席番号
     elif step == "seat_row":
         if text.isdigit() and 1 <= int(text) <= 99:
             session["seat_number"] = f"{session['seat_col']}{text}"
@@ -118,7 +134,6 @@ def handle_message(event: MessageEvent):
         else:
             reply(token, TextSendMessage(text="番号を数字で入力してください（例：12）"))
 
-    # Step 5: 確認・登録
     elif step == "confirm":
         if text == "✅ 登録する":
             success = register_supporter_seat(
@@ -131,7 +146,6 @@ def handle_message(event: MessageEvent):
             reply(token, reply_success(session) if success else reply_error())
 
         elif text == "🔄 やり直す":
-            sessions.pop(user_id, None)
             sessions[user_id] = {"step": "train_id"}
             reply(token, ask_train_id())
 

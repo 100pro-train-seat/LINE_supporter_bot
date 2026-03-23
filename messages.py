@@ -8,6 +8,8 @@ def _btn(label: str, text: str) -> QuickReplyButton:
     return QuickReplyButton(action=MessageAction(label=label, text=text))
 
 
+# ── サポーター用 ──────────────────────────────────────────────────
+
 def ask_train_id() -> TextSendMessage:
     return TextSendMessage(text="🚇 乗車する列車IDを入力してください\n（例：A0002）")
 
@@ -43,13 +45,33 @@ def reply_success(session: dict) -> TextSendMessage:
     )
 
 
+# ── テイカー用 ────────────────────────────────────────────────────
+
+def ask_taker_train_id() -> TextSendMessage:
+    return TextSendMessage(text="🔍 乗車する列車IDを入力してください\n（例：A0002）")
+
+
+def reply_taker_result(train_id: str, car_number: int) -> TextSendMessage:
+    return TextSendMessage(
+        text=f"✅ 見つかりました！\n\n🚇 列車ID：{train_id}\n🚃 {car_number}号車 に乗ってください\n\nサポーターがお待ちしています。"
+    )
+
+
+def reply_taker_not_found(train_id: str) -> TextSendMessage:
+    return TextSendMessage(
+        text=f"😔 列車ID：{train_id} に\n席を譲れるサポーターが見つかりませんでした。\n\nしばらく経ってから再度お試しください。"
+    )
+
+
+# ── 共通 ──────────────────────────────────────────────────────────
+
 def reply_error() -> TextSendMessage:
     return TextSendMessage(text="❌ 登録に失敗しました。しばらく経ってから再度お試しください。")
 
 
 def reply_default() -> TextSendMessage:
-    return TextSendMessage(text='メニューから「乗車情報登録」を選択するか、「登録」と入力してください。')
+    return TextSendMessage(text='メニューから機能を選択するか、「登録」または「席を探す」と入力してください。')
 
 
 def reply_cancelled() -> TextSendMessage:
-    return TextSendMessage(text="❌ 登録をキャンセルしました。")
+    return TextSendMessage(text="❌ キャンセルしました。")
