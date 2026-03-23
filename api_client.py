@@ -88,7 +88,3 @@ def get_user_profile(*, line_user_id: str) -> dict | None:
     return result if result else None
 
 
-def get_internal_messages() -> list:
-    """バックエンドから新着メッセージ一覧を取得する。"""
-    result = _request("get", "/internal/messages")
-    return result.get("messages", []) if result else []

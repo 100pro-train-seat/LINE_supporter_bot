@@ -1,7 +1,5 @@
 import logging
 import os
-import threading
-import time
 
 from dotenv import load_dotenv
 
@@ -14,7 +12,6 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 from api_client import (
     find_most_supporter_car,
-    get_internal_messages,
     get_last_error,
     get_match_list,
     get_user_profile,
@@ -58,27 +55,6 @@ PUSH_HANDLERS = {
     "thanks": push_thanks,
 }
 
-POLLING_INTERVAL = 5  # 秒
-
-
-def _poll_internal_messages():
-    """バックグラウンドで定期的に内部メッセージを確認し、LINE にプッシュ通知する。"""
-    while True:
-        try:
-            for msg in get_internal_messages():
-                uid        = msg.get("line_user_id")
-                handler_fn = PUSH_HANDLERS.get(msg.get("type"))
-                if uid and handler_fn:
-                    line_bot_api.push_message(uid, handler_fn())
-                    logger.info("Pushed %s to %s", msg.get("type"), uid)
-        except Exception as exc:
-            logger.error("Polling error: %s", exc)
-        time.sleep(POLLING_INTERVAL)
-
-
-# バックグラウンドでポーリングを開始（関数定義の後に記述）
-threading.Thread(target=_poll_internal_messages, daemon=True).start()
-
 SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
 CANDIDATE_KEYWORDS = {"号車を探す", "席を探す", "テイカー", "find", "search"}
 REQUEST_KEYWORDS   = {"座席リクエスト", "リクエスト"}
@@ -97,6 +73,18 @@ def reply_error(token):
 
 @app.get("/health")
 def health():
+    return {"status": "ok"}
+
+
+@app.post("/notify")
+async def notify(request: Request):
+    body = await request.json()
+    uid        = body.get("line_user_id")
+    handler_fn = PUSH_HANDLERS.get(body.get("type"))
+    if not uid or not handler_fn:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    line_bot_api.push_message(uid, handler_fn())
+    logger.info("Notified %s to %s", body.get("type"), uid)
     return {"status": "ok"}
 
 
