@@ -45,10 +45,31 @@ def reply_success(session: dict) -> TextSendMessage:
     )
 
 
+def reply_match_list(asking_ids: list) -> TextSendMessage:
+    items = [_btn(f"依頼 #{asking_id}", f"受理する {asking_id}") for asking_id in asking_ids]
+    return TextSendMessage(
+        text=f"📋 受理できる依頼が {len(asking_ids)} 件あります。\n受理する依頼を選んでください。",
+        quick_reply=QuickReply(items=items),
+    )
+
+
+def reply_match_empty() -> TextSendMessage:
+    return TextSendMessage(text="現在、受理できる依頼はありません。")
+
+
+def reply_match_accepted() -> TextSendMessage:
+    return TextSendMessage(text="✅ 依頼を受理しました。\nマッチングが成立したらお知らせします。")
+
+
 # ── テイカー用 ────────────────────────────────────────────────────
 
 def ask_taker_train_id() -> TextSendMessage:
     return TextSendMessage(text="🔍 乗車する列車番号を入力してください\n（例：3000A）")
+
+
+def ask_request_carriage() -> TextSendMessage:
+    items = [_btn(f"{i}号車", str(i)) for i in range(1, 7)]
+    return TextSendMessage(text="🚃 乗車している号車を選んでください", quick_reply=QuickReply(items=items))
 
 
 def reply_taker_result(train_id: str, car_number: int) -> TextSendMessage:
@@ -61,6 +82,14 @@ def reply_taker_not_found(train_id: str) -> TextSendMessage:
     return TextSendMessage(
         text=f"😔 列車番号：{train_id} に\n席を譲れるサポーターが見つかりませんでした。\n\nしばらく経ってから再度お試しください。"
     )
+
+
+def reply_request_sent() -> TextSendMessage:
+    return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。")
+
+
+def reply_request_failed() -> TextSendMessage:
+    return TextSendMessage(text="❌ リクエストの送信に失敗しました。\nしばらく経ってから再度お試しください。")
 
 
 # ── 共通 ──────────────────────────────────────────────────────────

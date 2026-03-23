@@ -10,11 +10,17 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
-from api_client import find_most_supporter_car, register_supporter_seat
+from api_client import (
+    find_most_supporter_car,
+    get_match_list,
+    register_supporter_seat,
+    send_seat_request,
+)
 from messages import (
     VALID_SEAT_COLUMNS,
     ask_carriage,
     ask_confirm,
+    ask_request_carriage,
     ask_seat_column,
     ask_seat_row,
     ask_taker_train_id,
@@ -22,6 +28,11 @@ from messages import (
     reply_cancelled,
     reply_default,
     reply_error,
+    reply_match_accepted,
+    reply_match_empty,
+    reply_match_list,
+    reply_request_failed,
+    reply_request_sent,
     reply_success,
     reply_taker_not_found,
     reply_taker_result,
@@ -36,9 +47,11 @@ handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
 sessions: dict = {}
 
-SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
-TAKER_KEYWORDS     = {"号車を探す", "席を探す", "テイカー", "find", "search"}
-CANCEL_KEYWORDS    = {"キャンセル", "cancel", "中断", "やめる"}
+SUPPORTER_KEYWORDS  = {"乗車情報登録", "登録", "register", "start"}
+CANDIDATE_KEYWORDS  = {"号車を探す", "席を探す", "テイカー", "find", "search"}
+REQUEST_KEYWORDS    = {"座席リクエスト", "リクエスト"}
+CHECK_KEYWORDS      = {"依頼確認"}
+CANCEL_KEYWORDS     = {"キャンセル", "cancel", "中断", "やめる"}
 
 
 def reply(token, message):
@@ -74,16 +87,42 @@ def handle_message(event: MessageEvent):
         reply(token, reply_cancelled())
         return
 
-    # サポーター登録フロー開始
+    # サポーター：乗車情報登録フロー開始
     if text in SUPPORTER_KEYWORDS:
         sessions[user_id] = {"step": "train_id"}
         reply(token, ask_train_id())
         return
 
-    # テイカーフロー開始
-    if text in TAKER_KEYWORDS:
+    # テイカー：候補問い合わせフロー開始
+    if text in CANDIDATE_KEYWORDS:
         sessions[user_id] = {"step": "taker_train_id"}
         reply(token, ask_taker_train_id())
+        return
+
+    # テイカー：座席リクエストフロー開始
+    if text in REQUEST_KEYWORDS:
+        sessions[user_id] = {"step": "request_train_id"}
+        reply(token, ask_train_id())
+        return
+
+    # サポーター：依頼確認（一発取得）
+    if text in CHECK_KEYWORDS:
+        asking = get_match_list(line_user_id=user_id)
+        if asking is None:
+            reply(token, reply_error())
+        elif len(asking) == 0:
+            reply(token, reply_match_empty())
+        else:
+            reply(token, reply_match_list(asking))
+        return
+
+    # サポーター：依頼を受理する（「受理する {ID}」形式）
+    if text.startswith("受理する "):
+        asking_id = text.split(" ", 1)[1]
+        # TODO: バックエンドの受理エンドポイントが提供され次第、ここに実装する
+        # 例: accept_match(line_user_id=user_id, asking_id=asking_id)
+        logger.info("Accept request – user=%s asking_id=%s", user_id, asking_id)
+        reply(token, reply_match_accepted())
         return
 
     # セッションなし
@@ -93,7 +132,7 @@ def handle_message(event: MessageEvent):
 
     step = session["step"]
 
-    # ── テイカーフロー ────────────────────────────────────────────
+    # ── 候補問い合わせフロー ──────────────────────────────────────
     if step == "taker_train_id":
         train_id = text
         sessions.pop(user_id, None)
@@ -103,7 +142,25 @@ def handle_message(event: MessageEvent):
         else:
             reply(token, reply_taker_not_found(train_id))
 
-    # ── サポーターフロー ──────────────────────────────────────────
+    # ── 座席リクエストフロー ──────────────────────────────────────
+    elif step == "request_train_id":
+        session["train_id"] = text
+        session["step"]     = "request_carriage"
+        reply(token, ask_request_carriage())
+
+    elif step == "request_carriage":
+        if text.isdigit() and 1 <= int(text) <= 6:
+            success = send_seat_request(
+                line_user_id=user_id,
+                train_id=session["train_id"],
+                car_number=text,
+            )
+            sessions.pop(user_id, None)
+            reply(token, reply_request_sent() if success else reply_request_failed())
+        else:
+            reply(token, ask_request_carriage())
+
+    # ── サポーター登録フロー ──────────────────────────────────────
     elif step == "train_id":
         session["train_id"] = text
         session["step"]     = "carriage"

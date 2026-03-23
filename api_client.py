@@ -32,7 +32,6 @@ def register_supporter_seat(*, line_user_id: str, train_id: str, car_number: str
     token = _login(line_user_id)
     if not token:
         return False
-
     try:
         with httpx.Client(timeout=10.0) as client:
             response = client.post(
@@ -55,7 +54,6 @@ def find_most_supporter_car(*, line_user_id: str, train_id: str) -> int | None:
     token = _login(line_user_id)
     if not token:
         return None
-
     try:
         with httpx.Client(timeout=10.0) as client:
             response = client.get(
@@ -71,4 +69,48 @@ def find_most_supporter_car(*, line_user_id: str, train_id: str) -> int | None:
         logger.error("Find car API error %s: %s", exc.response.status_code, exc.response.text)
     except Exception as exc:
         logger.error("Failed to find most supporter car: %s", exc)
+    return None
+
+
+def send_seat_request(*, line_user_id: str, train_id: str, car_number: str) -> bool:
+    """テイカーが座席リクエストを送信する。"""
+    token = _login(line_user_id)
+    if not token:
+        return False
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.post(
+                f"{BACKEND_BASE_URL}/match/ask",
+                data={"train_id": train_id, "car_number": car_number},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        response.raise_for_status()
+        logger.info("Seat request sent – user=%s train=%s car=%s", line_user_id, train_id, car_number)
+        return True
+    except httpx.HTTPStatusError as exc:
+        logger.error("Seat request API error %s: %s", exc.response.status_code, exc.response.text)
+    except Exception as exc:
+        logger.error("Failed to send seat request: %s", exc)
+    return False
+
+
+def get_match_list(*, line_user_id: str) -> list | None:
+    """サポーターが受理可能な依頼IDの一覧を取得する。エラー時は None。"""
+    token = _login(line_user_id)
+    if not token:
+        return None
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get(
+                f"{BACKEND_BASE_URL}/match/list",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        response.raise_for_status()
+        asking = response.json().get("asking", [])
+        logger.info("Match list – user=%s asking=%s", line_user_id, asking)
+        return asking
+    except httpx.HTTPStatusError as exc:
+        logger.error("Match list API error %s: %s", exc.response.status_code, exc.response.text)
+    except Exception as exc:
+        logger.error("Failed to get match list: %s", exc)
     return None
