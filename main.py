@@ -17,6 +17,7 @@ from api_client import (
     get_internal_messages,
     get_last_error,
     get_match_list,
+    get_user_profile,
     register_supporter_seat,
     send_seat_request,
 )
@@ -36,6 +37,7 @@ from messages import (
     reply_match_accepted,
     reply_match_empty,
     reply_match_list,
+    reply_rank,
     reply_request_sent,
     reply_success,
     reply_taker_not_found,
@@ -140,9 +142,16 @@ def handle_message(event: MessageEvent):
         reply(token, ask_train_id())
         return
 
-    # サポーター：ランク確認（準備中）
+    # サポーター：ランク確認
     if text in RANK_KEYWORDS:
-        reply(token, TextSendMessage(text="🏅 ランク確認機能は準備中です。\nしばらくお待ちください。"))
+        profile = get_user_profile(line_user_id=user_id)
+        if profile is None:
+            reply_error(token)
+        else:
+            reply(token, reply_rank(
+                matched_count=profile.get("matched_count", 0),
+                point=profile.get("point", 0),
+            ))
         return
 
     # サポーター：依頼確認

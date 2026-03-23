@@ -79,6 +79,15 @@ def get_match_list(*, line_user_id: str) -> list | None:
     return result.get("asking") if result else None
 
 
+def get_user_profile(*, line_user_id: str) -> dict | None:
+    """ユーザーの matched_count と point を取得する。エラー時は None。"""
+    token = _login(line_user_id)
+    if not token:
+        return None
+    result = _request("get", "/account/profile", token)
+    return result if result else None
+
+
 def get_internal_messages() -> list:
     """バックエンドから新着メッセージ一覧を取得する。"""
     result = _request("get", "/internal/messages")

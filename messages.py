@@ -1,4 +1,14 @@
-from linebot.models import MessageAction, QuickReply, QuickReplyButton, TextSendMessage
+from linebot.models import (
+    BoxComponent,
+    BubbleContainer,
+    FlexSendMessage,
+    MessageAction,
+    QuickReply,
+    QuickReplyButton,
+    SeparatorComponent,
+    TextComponent,
+    TextSendMessage,
+)
 
 SEAT_COLUMNS = ["A", "B", "C", "D", "E"]
 VALID_SEAT_COLUMNS = set(SEAT_COLUMNS)
@@ -96,6 +106,57 @@ def push_give() -> TextSendMessage:
 
 def push_thanks() -> TextSendMessage:
     return TextSendMessage(text="🙏 先ほど席を譲った人からお礼が届きました。\nありがとうございました！")
+
+
+# ── ランク ────────────────────────────────────────────────────────
+
+# (matched_count の閾値, ランク名, 絵文字アイコン)
+_RANKS = [
+    (11, "レジェンド", "👑"),
+    (8,  "ヒーロー",   "🛡️"),
+    (5,  "パートナー", "🤝"),
+    (2,  "ひよこ",     "🐦"),
+    (0,  "たまご",     "🥚"),
+]
+
+
+def _get_rank(matched_count: int) -> tuple[str, str]:
+    for threshold, name, icon in _RANKS:
+        if matched_count >= threshold:
+            return name, icon
+    return "たまご", "🥚"
+
+
+def reply_rank(matched_count: int, point: int) -> FlexSendMessage:
+    rank_name, icon = _get_rank(matched_count)
+    bubble = BubbleContainer(
+        body=BoxComponent(
+            layout="vertical",
+            spacing="md",
+            contents=[
+                TextComponent(text="🏅 サポーターランク", weight="bold", color="#888888", size="sm"),
+                TextComponent(text=icon, size="5xl", align="center"),
+                TextComponent(text=rank_name, weight="bold", size="xxl", align="center"),
+                SeparatorComponent(margin="md"),
+                BoxComponent(
+                    layout="horizontal",
+                    margin="md",
+                    contents=[
+                        TextComponent(text="席を譲った回数", color="#555555", flex=1),
+                        TextComponent(text=f"{matched_count} 回", weight="bold", flex=1, align="end"),
+                    ],
+                ),
+                BoxComponent(
+                    layout="horizontal",
+                    contents=[
+                        TextComponent(text="保有ポイント", color="#555555", flex=1),
+                        TextComponent(text=f"{point} pt", weight="bold", flex=1, align="end"),
+                    ],
+                ),
+            ],
+        )
+    )
+    return FlexSendMessage(alt_text=f"ランク: {rank_name} | {matched_count}回 | {point}pt", contents=bubble)
 
 
 # ── 共通 ──────────────────────────────────────────────────────────
