@@ -84,7 +84,7 @@ def get_user_profile(*, line_user_id: str) -> dict | None:
     token = _login(line_user_id)
     if not token:
         return None
-    result = _request("get", "/account/profile", token)
+    result = _request("get", "/user/profile", token)
     return result if result else None
 
 
