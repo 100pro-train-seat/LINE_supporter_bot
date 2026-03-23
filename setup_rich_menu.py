@@ -29,12 +29,12 @@ HEADERS_JSON = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application
 # リッチメニューのレイアウト定義（2×2）
 #
 #  ┌─────────────────┬─────────────────┐
-#  │  乗車状況を登録  │ ランクを確認する │
-#  │  （サポーター）  │ （サポーター）  │
-#  ├─────────────────┼─────────────────┤
-#  │  乗車状況        │  座席            │
+#  │  乗車情報        │  座席            │
 #  │  問い合わせ      │  リクエスト      │
-#  │  （テイカー）    │  （テイカー）    │
+#  │  （依頼者）      │  （依頼者）      │
+#  ├─────────────────┼─────────────────┤
+#  │  乗車情報登録    │  ランクを確認    │
+#  │  （サポーター）  │  （サポーター）  │
 #  └─────────────────┴─────────────────┘
 RICH_MENU_BODY = {
     "size": {"width": 2500, "height": 843},
@@ -44,19 +44,19 @@ RICH_MENU_BODY = {
     "areas": [
         {
             "bounds": {"x": 0, "y": 0, "width": 1250, "height": 421},
-            "action": {"type": "message", "label": "乗車状況を登録", "text": "登録"},
+            "action": {"type": "message", "label": "乗車情報問い合わせ", "text": "号車を探す"},
         },
         {
             "bounds": {"x": 1250, "y": 0, "width": 1250, "height": 421},
-            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認する"},
+            "action": {"type": "message", "label": "座席リクエスト", "text": "座席リクエスト"},
         },
         {
             "bounds": {"x": 0, "y": 421, "width": 1250, "height": 422},
-            "action": {"type": "message", "label": "乗車状況問い合わせ", "text": "号車を探す"},
+            "action": {"type": "message", "label": "乗車情報登録", "text": "登録"},
         },
         {
             "bounds": {"x": 1250, "y": 421, "width": 1250, "height": 422},
-            "action": {"type": "message", "label": "座席リクエスト", "text": "座席リクエスト"},
+            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認する"},
         },
     ],
 }
@@ -93,15 +93,17 @@ def main() -> None:
     image_path = "rich_menu.png"
     if os.path.exists(image_path):
         upload_image(menu_id, image_path)
+        set_default(menu_id)
+        print(f"\n🎉 セットアップ完了！\nRich Menu ID: {menu_id}")
     else:
         print(
-            f"⚠️  {image_path} が見つかりません。\n"
-            "   LINE Developers Console > Messaging API > Rich menu から\n"
-            f"   メニュー ID「{menu_id}」に画像を手動でアップロードしてください。"
+            f"\n⚠️  {image_path} が見つかりません。\n"
+            "以下の手順で手動設定してください：\n"
+            "1. LINE Developers Console > Messaging API > Rich menu を開く\n"
+            f"2. メニュー ID「{menu_id}」に画像をアップロード\n"
+            "3. 「Apply to users」をクリックしてデフォルトに設定\n"
+            f"\nRich Menu ID: {menu_id}"
         )
-
-    set_default(menu_id)
-    print(f"\n🎉 セットアップ完了！\nRich Menu ID: {menu_id}")
 
 
 if __name__ == "__main__":
