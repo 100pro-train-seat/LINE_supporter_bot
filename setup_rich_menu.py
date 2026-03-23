@@ -1,7 +1,6 @@
 """
 LINE Rich Menu セットアップスクリプト
 
-サポーター用ボットのリッチメニューを作成・設定する。
 初回のみ実行してください。
 
 使い方:
@@ -24,25 +23,33 @@ TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
 if not TOKEN:
     sys.exit("ERROR: LINE_CHANNEL_ACCESS_TOKEN が設定されていません。")
 
-BASE = "https://api.line.me/v2/bot"
+BASE         = "https://api.line.me/v2/bot"
 HEADERS_JSON = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
 
-# リッチメニューのレイアウト定義（横2分割）
+# リッチメニューのレイアウト定義（横3分割）
+#
+#  ┌──────────────┬──────────────┬──────────────┐
+#  │  乗車状況    │  乗車状況    │  座席        │
+#  │  を登録      │  問い合わせ  │  リクエスト  │
+#  │ （サポーター）│ （テイカー） │ （テイカー） │
+#  └──────────────┴──────────────┴──────────────┘
 RICH_MENU_BODY = {
     "size": {"width": 2500, "height": 843},
     "selected": True,
-    "name": "サポーターメニュー",
+    "name": "メインメニュー",
     "chatBarText": "メニューを開く",
     "areas": [
         {
-            # 左側：乗車情報登録
-            "bounds": {"x": 0, "y": 0, "width": 1250, "height": 843},
-            "action": {"type": "message", "label": "乗車情報登録", "text": "乗車情報登録"},
+            "bounds": {"x": 0, "y": 0, "width": 833, "height": 843},
+            "action": {"type": "message", "label": "乗車状況を登録", "text": "登録"},
         },
         {
-            # 右側：ヘルプ
-            "bounds": {"x": 1250, "y": 0, "width": 1250, "height": 843},
-            "action": {"type": "message", "label": "ヘルプ", "text": "ヘルプ"},
+            "bounds": {"x": 833, "y": 0, "width": 833, "height": 843},
+            "action": {"type": "message", "label": "乗車状況問い合わせ", "text": "号車を探す"},
+        },
+        {
+            "bounds": {"x": 1666, "y": 0, "width": 834, "height": 843},
+            "action": {"type": "message", "label": "座席リクエスト", "text": "座席リクエスト"},
         },
     ],
 }
@@ -64,16 +71,13 @@ def upload_image(menu_id: str, image_path: str) -> None:
             data=f.read(),
         )
     res.raise_for_status()
-    print(f"✅ 画像アップロード完了")
+    print("✅ 画像アップロード完了")
 
 
 def set_default(menu_id: str) -> None:
-    res = requests.post(
-        f"{BASE}/user/all/richmenu/{menu_id}",
-        headers=HEADERS_JSON,
-    )
+    res = requests.post(f"{BASE}/user/all/richmenu/{menu_id}", headers=HEADERS_JSON)
     res.raise_for_status()
-    print(f"✅ デフォルトリッチメニューに設定しました")
+    print("✅ デフォルトリッチメニューに設定しました")
 
 
 def main() -> None:
