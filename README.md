@@ -1,22 +1,64 @@
-# LINE サポーターbot（乗車情報登録）
+# LINE サポーターbot
 
-横浜市営地下鉄のサポーターが乗車情報（列車・号車・座席）を LINE から登録するボットです。
+横浜市営地下鉄のサポーター（席を譲る人）とテイカー（席に座りたい人）をマッチングする LINE ボットです。
 
 ---
 
-## どんなことができる？
+## 機能一覧
 
-LINE でサポーターが以下の流れで座席を登録できます。
+| トリガーワード | 機能 | 対象 |
+|--------------|------|------|
+| 「登録」 | 乗車情報登録 | サポーター |
+| 「依頼確認」 | 受理できる依頼の一覧を確認 | サポーター |
+| 「号車を探す」 | サポーターが多い号車を検索 | テイカー |
+| 「座席リクエスト」 | 同じ号車のサポーターに依頼を送信 | テイカー |
+| 「キャンセル」 | 操作を中断 | 共通 |
 
+---
+
+## 各機能のフロー
+
+### 乗車情報登録（サポーター）
 ```
 「登録」と送信
-  → 列車IDを入力（例：A0002）
+  → 列車番号を入力（例：A0002）
   → 号車を選択（1〜6号車）
   → 座席の列を選択（A〜E）
-  → 座席の番号を入力（例：12）
-  → 確認画面（「✅ 登録する」/「🔄 やり直す」）
-  → バックエンドAPIに送信して完了！
+  → 座席番号を入力（例：12）
+  → 確認画面 → 「✅ 登録する」
+  → 登録完了
 ```
+
+### 候補問い合わせ（テイカー）
+```
+「号車を探す」と送信
+  → 列車番号を入力
+  → サポーターが最も多い号車番号を返答
+```
+
+### 座席リクエスト（テイカー）
+```
+「座席リクエスト」と送信
+  → 列車番号を入力
+  → 号車を選択
+  → 同じ号車のサポーターに依頼を送信
+```
+
+### 依頼確認・受理（サポーター）
+```
+「依頼確認」と送信
+  → 受理できる依頼の一覧を表示
+  → 「依頼 #XX」を選択
+  → 受理完了（※後述の残タスクを参照）
+```
+
+### プッシュ通知（自動）
+ボットが5秒ごとにバックエンドを確認し、新着があれば自動で通知します。
+
+| 通知の種類 | 内容 |
+|-----------|------|
+| `give` | 「同じ電車に席に座りたい人がいます」 |
+| `thanks` | 「席を譲った人からお礼が届きました」 |
 
 ---
 
@@ -26,7 +68,6 @@ LINE でサポーターが以下の流れで座席を登録できます。
 LINE_supporter_bot/
 ├── main.py            # ボットのメイン処理（LINEからメッセージを受け取る）
 ├── messages.py        # LINEに送るメッセージの定義（クイックリプライ等）
-├── session.py         # ユーザーごとの会話の状態を管理する
 ├── api_client.py      # バックエンドAPIにデータを送る処理
 ├── setup_rich_menu.py # LINEのリッチメニュー（下部メニュー）を作成するスクリプト
 ├── requirements.txt   # 必要なPythonライブラリ一覧
@@ -46,7 +87,7 @@ LINE サーバー
 ngrok（HTTPS化）
   ↓
 uvicorn + FastAPI（このボット）
-  ↓ 登録データを送信
+  ↓ APIを呼び出す
 バックエンドAPI（https://100v9train.f5.si）
   ↓
 MySQL データベース
@@ -73,7 +114,7 @@ source .venv/bin/activate
 ### 3. 必要なライブラリをインストールする
 
 ```bash
-pip install fastapi uvicorn python-dotenv httpx paramiko future "requests==2.31.0"
+pip install fastapi uvicorn python-dotenv httpx future "requests==2.31.0"
 pip install line-bot-sdk==2.4.3 --no-deps
 pip install "aiohttp>=3.9.0"
 ```
@@ -92,14 +133,7 @@ nano .env   # 各項目を実際の値に書き換える
 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE公式アカウントの管理画面から取得 |
 | `LINE_CHANNEL_SECRET` | LINE公式アカウントの管理画面から取得 |
 | `BACKEND_API_URL` | バックエンドAPIのURL |
-| `BACKEND_API_TOKEN` | バックエンドAPIの認証トークン |
-| `VPS_HOST` | VPSのIPアドレス |
-| `VPS_USER` | VPSのSSHユーザー名 |
-| `VPS_PASS` | VPSのSSHパスワード |
-| `DB_USER` | MySQLのユーザー名 |
-| `DB_PASS` | MySQLのパスワード |
-| `DB_NAME` | MySQLのデータベース名 |
-| `BOT_LINE_USER_ID` | BOTアカウントのLINEユーザーID |
+| `BACKEND_API_TOKEN` | 内部API用トークン（バックエンド担当から取得） |
 
 nano の保存方法：`Ctrl+X` → `Y` → `Enter`
 
@@ -107,17 +141,10 @@ nano の保存方法：`Ctrl+X` → `Y` → `Enter`
 
 ## 起動方法（VPS上で常時動かす）
 
-### uvicorn をバックグラウンドで起動
-
 ```bash
 cd ~/LINE_supporter_bot
 source .venv/bin/activate
 nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
-```
-
-### ngrok をバックグラウンドで起動
-
-```bash
 nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
 ```
 
@@ -145,8 +172,6 @@ https://heavenly-nonvascularly-georgianne.ngrok-free.dev/webhook
 
 ## VPS が再起動した場合
 
-uvicorn と ngrok が止まるので、以下を実行して再起動します：
-
 ```bash
 ssh train@160.251.236.85
 cd ~/LINE_supporter_bot
@@ -161,22 +186,29 @@ nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
 
 | 機能 | 状態 |
 |------|------|
-| LINEでの会話フロー | ✅ 動作中 |
-| VPSへのデプロイ | ✅ 完了 |
-| 24時間稼働 | ✅ Mac不要 |
-| バックエンドAPIへの登録 | ❌ 500エラー（バックエンド側の調査が必要） |
+| 乗車情報登録（サポーター） | ✅ 動作中 |
+| 候補問い合わせ（テイカー） | ✅ 動作中 |
+| 座席リクエスト（テイカー） | ✅ 動作中 |
+| 依頼確認（サポーター） | ✅ 動作中 |
+| プッシュ通知（give / thanks） | ✅ 動作中 |
+| 依頼受理後のマッチング確定 | ⏳ バックエンド待ち |
 
-### 500エラーについて
+---
 
-`POST https://100v9train.f5.si/api/supporters/seats` に以下のフォームデータを送ると 500 エラーが返ってくる：
+## 残タスク
 
-```
-train_id=A0001
-car_number=3
-seat_number=A12
-```
+### 依頼受理のAPI（バックエンドチームへの依頼）
 
-バックエンド担当者にサーバー側のエラーログを確認してもらう必要があります。
+現在「依頼 #XX」を押してもマッチングが確定しません。バックエンドに以下のAPIを作ってもらう必要があります。
+
+> **`POST /match/accept`**
+> - リクエスト：`asking_id`（依頼ID）、`Authorization: Bearer <トークン>`
+> - 処理：サポーターとテイカーのステータスを「マッチング中」に更新、待機情報を削除
+> - レスポンス：`{"ok": true, "code": 201, "taker_line_user_id": "Uxxxxxxxxxx"}`
+>
+> ※ レスポンスに `taker_line_user_id` を含めることで、LINE Bot 側からテイカーにも通知を送れます。
+
+APIができたら `main.py` の `# TODO` 部分にすぐ実装できます。
 
 ---
 
