@@ -8,8 +8,8 @@ LINE Rich Menu タブ切り替えセットアップスクリプト
 
 事前準備:
     .env に LINE_CHANNEL_ACCESS_TOKEN を設定する。
-    rich_menu_tab1.png（2500×843px）: 「席をゆずる」タブがアクティブな画像
-    rich_menu_tab2.png（2500×843px）: 「席にすわりたい」タブがアクティブな画像
+    supporter_tab.png（2500×843px）: 「席をゆずる」タブがアクティブな画像
+    taker_tab.png（2500×843px）: 「席にすわりたい」タブがアクティブな画像
 
 レイアウト（小サイズ 2500×843）:
     ┌──────────────────┬──────────────────┐ ← タブ行（高さ150px）
@@ -150,8 +150,8 @@ def main() -> None:
     id2 = create_rich_menu(MENU_TAB2, "席にすわりたい")
 
     # 画像をアップロード
-    upload_image(id1, "rich_menu_tab1.png", "席をゆずる")
-    upload_image(id2, "rich_menu_tab2.png", "席にすわりたい")
+    upload_image(id1, "supporter_tab.png", "席をゆずる")
+    upload_image(id2, "taker_tab.png", "席にすわりたい")
 
     # エイリアスを作成（タブ切り替えに必要）
     create_alias(id1, ALIAS_TAB1)
