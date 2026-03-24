@@ -22,11 +22,10 @@ def _request(method: str, path: str, token: str = "", **kwargs):
     try:
         with httpx.Client(timeout=10.0) as client:
             response = getattr(client, method)(f"{BASE_URL}{path}", headers=headers, **kwargs)
-        response.raise_for_status()
         data = response.json()
-        if not data.get("ok", True):
+        if not response.is_success or not data.get("ok", True):
             _last_error = data.get("error", "エラーが発生しました。")
-            logger.error("%s %s error: %s", method.upper(), path, _last_error)
+            logger.error("%s %s error(%s): %s", method.upper(), path, response.status_code, _last_error)
             return None
         return data
     except Exception as exc:
