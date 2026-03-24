@@ -67,7 +67,7 @@ MENU_TAB1 = {
         {
             # ランクを確認
             "bounds": {"x": 1250, "y": TAB_H, "width": 1250, "height": BUTTON_H},
-            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認する"},
+            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認"},
         },
     ],
 }
