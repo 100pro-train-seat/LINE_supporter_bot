@@ -178,7 +178,7 @@ def reply_rank(matched_count: int, point: int) -> FlexSendMessage:
 # ── 共通 ──────────────────────────────────────────────────────────
 
 def reply_default() -> TextSendMessage:
-    return TextSendMessage(text='メニューから機能を選択するか、「登録」または「席を探す」と入力してください。')
+    return TextSendMessage(text='メニューから機能を選択するか、「登録」または「問い合わせ」と入力してください。')
 
 
 def reply_cancelled() -> TextSendMessage:
