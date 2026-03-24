@@ -19,12 +19,11 @@ from api_client import (
     send_seat_request,
 )
 from messages import (
-    VALID_SEAT_COLUMNS,
+    VALID_SEAT_POSITIONS,
     ask_carriage,
     ask_confirm,
     ask_request_carriage,
-    ask_seat_column,
-    ask_seat_row,
+    ask_seat_position,
     ask_taker_train_id,
     ask_train_id,
     push_give,
@@ -205,27 +204,19 @@ def handle_message(event: MessageEvent):
     elif step == "carriage":
         if text.isdigit() and 1 <= int(text) <= 6:
             session["car_number"] = text
-            session["step"]       = "seat_column"
-            reply(token, ask_seat_column())
+            session["step"]       = "seat_position"
+            reply(token, ask_seat_position())
         else:
             reply(token, ask_carriage())
 
-    elif step == "seat_column":
-        col = text.upper()
-        if col in VALID_SEAT_COLUMNS:
-            session["seat_col"] = col
-            session["step"]     = "seat_row"
-            reply(token, ask_seat_row())
-        else:
-            reply(token, ask_seat_column())
-
-    elif step == "seat_row":
-        if text.isdigit() and 1 <= int(text) <= 99:
-            session["seat_number"] = f"{session['seat_col']}{text}"
+    elif step == "seat_position":
+        pos = text.upper()
+        if pos in VALID_SEAT_POSITIONS:
+            session["seat_number"] = pos
             session["step"]        = "confirm"
             reply(token, ask_confirm(session))
         else:
-            reply(token, TextSendMessage(text="番号を数字で入力してください（例：12）"))
+            reply(token, ask_seat_position())
 
     elif step == "confirm":
         if text == "✅ 登録する":

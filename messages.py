@@ -10,8 +10,12 @@ from linebot.models import (
     TextSendMessage,
 )
 
-SEAT_COLUMNS = ["A", "B", "C", "D", "E"]
-VALID_SEAT_COLUMNS = set(SEAT_COLUMNS)
+SEAT_POSITIONS = {
+    "A": "端（車両連結部付近）",
+    "B": "ドア横（ドア間の端席）",
+    "C": "真ん中（ドア間の中央席）",
+}
+VALID_SEAT_POSITIONS = set(SEAT_POSITIONS.keys())
 
 
 def _btn(label: str, text: str) -> QuickReplyButton:
@@ -29,29 +33,27 @@ def ask_carriage() -> TextSendMessage:
     return TextSendMessage(text="🚃 何号車ですか？", quick_reply=QuickReply(items=items))
 
 
-def ask_seat_column() -> TextSendMessage:
-    items = [_btn(col, col) for col in SEAT_COLUMNS]
-    return TextSendMessage(text="💺 座席の位置を選んでください\n（A〜E）", quick_reply=QuickReply(items=items))
-
-
-def ask_seat_row() -> TextSendMessage:
-    return TextSendMessage(text="🔢 座席番号を入力してください\n（例：12）")
+def ask_seat_position() -> TextSendMessage:
+    items = [_btn(f"{k}：{v}", k) for k, v in SEAT_POSITIONS.items()]
+    return TextSendMessage(text="💺 座席の位置を選んでください", quick_reply=QuickReply(items=items))
 
 
 def ask_confirm(session: dict) -> TextSendMessage:
+    pos = session["seat_number"]
     body = (
         f"📋 以下の内容で登録しますか？\n\n"
         f"🚇 列車番号：{session['train_id']}\n"
         f"🚃 号車：{session['car_number']}号車\n"
-        f"💺 座席：{session['seat_number']}"
+        f"💺 位置：{pos}（{SEAT_POSITIONS[pos]}）"
     )
     items = [_btn("✅ 登録する", "✅ 登録する"), _btn("🔄 やり直す", "🔄 やり直す")]
     return TextSendMessage(text=body, quick_reply=QuickReply(items=items))
 
 
 def reply_success(session: dict) -> TextSendMessage:
+    pos = session["seat_number"]
     return TextSendMessage(
-        text=f"✅ 乗車情報を登録しました！\n\n🚇 {session['train_id']}　{session['car_number']}号車　{session['seat_number']}"
+        text=f"✅ 乗車情報を登録しました！\n\n🚇 {session['train_id']}　{session['car_number']}号車　{pos}（{SEAT_POSITIONS[pos]}）"
     )
 
 
