@@ -62,12 +62,12 @@ MENU_TAB1 = {
         {
             # 乗車位置登録
             "bounds": {"x": 0, "y": TAB_H, "width": 1250, "height": BUTTON_H},
-            "action": {"type": "message", "label": "乗車位置登録", "text": "登録"},
+            "action": {"type": "message", "label": "登録", "text": "登録"},
         },
         {
             # ランクを確認
             "bounds": {"x": 1250, "y": TAB_H, "width": 1250, "height": BUTTON_H},
-            "action": {"type": "message", "label": "ランクを確認", "text": "ランクを確認する"},
+            "action": {"type": "message", "label": "ランクを確認する", "text": "ランクを確認する"},
         },
     ],
 }
@@ -92,7 +92,7 @@ MENU_TAB2 = {
         {
             # 乗車情報問い合わせ
             "bounds": {"x": 0, "y": TAB_H, "width": 1250, "height": BUTTON_H},
-            "action": {"type": "message", "label": "乗車情報問い合わせ", "text": "号車を探す"},
+            "action": {"type": "message", "label": "号車を探す", "text": "号車を探す"},
         },
         {
             # 座席リクエスト
