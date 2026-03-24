@@ -86,5 +86,3 @@ def get_user_profile(*, line_user_id: str) -> dict | None:
         return None
     result = _request("get", "/user/profile", token)
     return result if result else None
-
-

@@ -14,14 +14,14 @@ from linebot.models import (
 SEAT_MAP_URL = "https://heavenly-nonvascularly-georgianne.ngrok-free.dev/static/trainmap.png"
 
 SEAT_POSITIONS = {
-    "A": "端席（右端）",
-    "B": "ドア横（右ブロック）",
-    "C": "ドア間（右中央）",
-    "D": "ドア横（右内側）",
-    "E": "ドア横（左内側）",
-    "F": "ドア間（左中央）",
-    "G": "ドア横（左ブロック）",
-    "H": "端席（左端）",
+    "A": "端",
+    "B": "ドア横",
+    "C": "ドア間",
+    "D": "ドア横",
+    "E": "ドア横",
+    "F": "ドア間",
+    "G": "ドア横",
+    "H": "端",
 }
 VALID_SEAT_POSITIONS = set(SEAT_POSITIONS.keys())
 
@@ -100,7 +100,7 @@ def ask_request_carriage() -> TextSendMessage:
 
 def reply_taker_result(train_id: str, car_number: int) -> TextSendMessage:
     return TextSendMessage(
-        text=f"✅ 乗車状況を確認しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車 がおすすめです"
+        text=f"✅ 乗車状況を確認しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車がおすすめです"
     )
 
 
