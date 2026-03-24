@@ -128,9 +128,9 @@ def upload_image(menu_id: str, image_path: str, label: str) -> bool:
 
 def create_alias(menu_id: str, alias_id: str) -> None:
     # 既存のエイリアスを削除してから作成
-    requests.delete(f"{BASE}/richmenuAlias/{alias_id}", headers=HEADERS_JSON)
+    requests.delete(f"{BASE}/richmenu/alias/{alias_id}", headers=HEADERS_JSON)
     res = requests.post(
-        f"{BASE}/richmenuAlias",
+        f"{BASE}/richmenu/alias",
         headers=HEADERS_JSON,
         json={"richMenuAliasId": alias_id, "richMenuId": menu_id},
     )
