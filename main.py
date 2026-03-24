@@ -57,7 +57,7 @@ PUSH_HANDLERS = {
 }
 
 SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "register", "start"}
-CANDIDATE_KEYWORDS = {"号車を探す", "席を探す", "テイカー", "find", "search"}
+CANDIDATE_KEYWORDS = {"号車を探す", "問い合わせ", "席を探す", "テイカー", "find", "search"}
 REQUEST_KEYWORDS   = {"座席リクエスト", "リクエスト"}
 CHECK_KEYWORDS     = {"依頼確認"}
 RANK_KEYWORDS      = {"ランクを確認する"}

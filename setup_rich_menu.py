@@ -92,7 +92,7 @@ MENU_TAB2 = {
         {
             # 乗車情報問い合わせ
             "bounds": {"x": 0, "y": TAB_H, "width": 1250, "height": BUTTON_H},
-            "action": {"type": "message", "label": "号車を探す", "text": "号車を探す"},
+            "action": {"type": "message", "label": "乗車情報問い合わせ", "text": "問い合わせ"},
         },
         {
             # 座席リクエスト
