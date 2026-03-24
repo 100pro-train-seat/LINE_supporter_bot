@@ -2,6 +2,7 @@ from linebot.models import (
     BoxComponent,
     BubbleContainer,
     FlexSendMessage,
+    ImageSendMessage,
     MessageAction,
     QuickReply,
     QuickReplyButton,
@@ -9,6 +10,8 @@ from linebot.models import (
     TextComponent,
     TextSendMessage,
 )
+
+SEAT_MAP_URL = "https://heavenly-nonvascularly-georgianne.ngrok-free.dev/static/trainmap.png"
 
 SEAT_POSITIONS = {
     "A": "端席（右端）",
@@ -38,9 +41,13 @@ def ask_carriage() -> TextSendMessage:
     return TextSendMessage(text="🚃 何号車ですか？", quick_reply=QuickReply(items=items))
 
 
-def ask_seat_position() -> TextSendMessage:
-    items = [_btn(f"{k}：{v}", k) for k, v in SEAT_POSITIONS.items()]
-    return TextSendMessage(text="💺 座席の位置を選んでください", quick_reply=QuickReply(items=items))
+def ask_seat_position() -> ImageSendMessage:
+    items = [_btn(k, k) for k in SEAT_POSITIONS.keys()]
+    return ImageSendMessage(
+        original_content_url=SEAT_MAP_URL,
+        preview_image_url=SEAT_MAP_URL,
+        quick_reply=QuickReply(items=items),
+    )
 
 
 def ask_confirm(session: dict) -> TextSendMessage:
