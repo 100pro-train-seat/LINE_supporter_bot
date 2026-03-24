@@ -10,6 +10,7 @@
 |--------------|------|------|
 | 「登録」 | 乗車情報登録 | サポーター |
 | 「依頼確認」 | 受理できる依頼の一覧を確認 | サポーター |
+| 「ランクを確認する」 | サポーターランクと統計を確認 | サポーター |
 | 「号車を探す」 | サポーターが多い号車を検索 | テイカー |
 | 「座席リクエスト」 | 同じ号車のサポーターに依頼を送信 | テイカー |
 | 「キャンセル」 | 操作を中断 | 共通 |
@@ -52,8 +53,22 @@
   → 受理完了（※後述の残タスクを参照）
 ```
 
+### ランク確認（サポーター）
+```
+「ランクを確認する」と送信
+  → 席を譲った回数・保有ポイント・サポーターランクを表示
+```
+
+| ランク | 条件 |
+|--------|------|
+| たまご | 0回〜 |
+| ひよこ | 2回〜 |
+| パートナー | 5回〜 |
+| ヒーロー | 8回〜 |
+| レジェンド | 11回〜 |
+
 ### プッシュ通知（自動）
-ボットが5秒ごとにバックエンドを確認し、新着があれば自動で通知します。
+バックエンドでイベントが発生したタイミングで `POST /notify` を通じて即座に通知します。
 
 | 通知の種類 | 内容 |
 |-----------|------|
@@ -190,14 +205,16 @@ nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
 | 候補問い合わせ（テイカー） | ✅ 動作中 |
 | 座席リクエスト（テイカー） | ✅ 動作中 |
 | 依頼確認（サポーター） | ✅ 動作中 |
-| プッシュ通知（give / thanks） | ✅ 動作中 |
-| 依頼受理後のマッチング確定 | ⏳ バックエンド待ち |
+| ランク確認（サポーター） | ✅ 動作中 |
+| プッシュ通知（give / thanks） | ✅ 動作中（/notify 方式） |
+| 依頼受理後のマッチング確定 | ⏳ バックエンド待ち（/match/accept） |
+| /notify 呼び出し | ⏳ バックエンド待ち |
 
 ---
 
 ## 残タスク
 
-### 依頼受理のAPI（バックエンドチームへの依頼）
+### 1. 依頼受理のAPI（バックエンドチームへの依頼）
 
 現在「依頼 #XX」を押してもマッチングが確定しません。バックエンドに以下のAPIを作ってもらう必要があります。
 
@@ -205,10 +222,30 @@ nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
 > - リクエスト：`asking_id`（依頼ID）、`Authorization: Bearer <トークン>`
 > - 処理：サポーターとテイカーのステータスを「マッチング中」に更新、待機情報を削除
 > - レスポンス：`{"ok": true, "code": 201, "taker_line_user_id": "Uxxxxxxxxxx"}`
->
-> ※ レスポンスに `taker_line_user_id` を含めることで、LINE Bot 側からテイカーにも通知を送れます。
 
 APIができたら `main.py` の `# TODO` 部分にすぐ実装できます。
+
+### 2. プッシュ通知の /notify 呼び出し（バックエンドチームへの依頼）
+
+LINE Bot 側の `POST /notify` エンドポイントは実装済みです。バックエンド側で以下のタイミングで呼び出してください。
+
+| タイミング | type | 通知先 |
+|-----------|------|--------|
+| `/match/ask` 処理後 | `give` | サポーター |
+| `/match/accept` 処理後 | `thanks` | サポーター |
+
+```php
+$ch = curl_init('http://localhost:8000/notify');
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    'line_user_id' => '通知する相手のLINE ID',
+    'type'         => 'give', // または 'thanks'
+]));
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_exec($ch);
+curl_close($ch);
+```
 
 ---
 
