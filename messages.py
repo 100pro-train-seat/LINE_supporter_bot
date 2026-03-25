@@ -114,6 +114,20 @@ def reply_request_sent() -> TextSendMessage:
     return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。")
 
 
+def reply_candidate_success() -> TextSendMessage:
+    return TextSendMessage(text="✅ 立候補しました。\nテイカーに席番号が通知されます。")
+
+
+def reply_matched(train_id: str, car_number: int, seat_number: str) -> TextSendMessage:
+    return TextSendMessage(
+        text=f"🎉 マッチングが成立しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車\n💺 座席位置：{seat_number}"
+    )
+
+
+def reply_not_matched_yet() -> TextSendMessage:
+    return TextSendMessage(text="⏳ まだマッチしていません。\nしばらくお待ちください。")
+
+
 # ── プッシュ通知 ──────────────────────────────────────────────────
 
 def push_give() -> TextSendMessage:

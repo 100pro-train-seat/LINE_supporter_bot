@@ -78,6 +78,24 @@ def get_match_list(*, line_user_id: str) -> list | None:
     return result.get("asking") if result else None
 
 
+def accept_match(*, line_user_id: str, match_id: str) -> bool:
+    """サポーターが依頼に立候補する。"""
+    token = _login(line_user_id)
+    if not token:
+        return False
+    result = _request("post", "/match/candidate", token, data={"match_id": match_id})
+    return result is not None
+
+
+def get_matched(*, line_user_id: str) -> dict | None:
+    """テイカーのマッチング結果を取得する。未マッチの場合は None。"""
+    token = _login(line_user_id)
+    if not token:
+        return None
+    result = _request("get", "/match/matched", token)
+    return result if result else None
+
+
 def get_user_profile(*, line_user_id: str) -> dict | None:
     """ユーザーの matched_count と point を取得する。エラー時は None。"""
     token = _login(line_user_id)

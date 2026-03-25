@@ -12,9 +12,11 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 from api_client import (
+    accept_match,
     find_most_supporter_car,
     get_last_error,
     get_match_list,
+    get_matched,
     get_user_profile,
     register_supporter_seat,
     send_seat_request,
@@ -29,11 +31,13 @@ from messages import (
     ask_train_id,
     push_give,
     push_thanks,
+    reply_candidate_success,
     reply_cancelled,
     reply_default,
-    reply_match_accepted,
     reply_match_empty,
     reply_match_list,
+    reply_matched,
+    reply_not_matched_yet,
     reply_rank,
     reply_request_sent,
     reply_success,
@@ -154,12 +158,24 @@ def handle_message(event: MessageEvent):
             reply(token, reply_match_list(asking))
         return
 
-    # サポーター：依頼を受理する（「受理する {ID}」形式）
+    # サポーター：依頼に立候補（「受理する {ID}」形式）
     if text.startswith("受理する "):
-        asking_id = text.split(" ", 1)[1]
-        # TODO: バックエンドの受理エンドポイントが提供され次第、ここに実装する
-        logger.info("Accept request – user=%s asking_id=%s", user_id, asking_id)
-        reply(token, reply_match_accepted())
+        match_id = text.split(" ", 1)[1]
+        success = accept_match(line_user_id=user_id, match_id=match_id)
+        reply(token, reply_candidate_success() if success else TextSendMessage(text=f"❌ {get_last_error()}"))
+        return
+
+    # テイカー：マッチング確認
+    if text == "マッチ確認":
+        result = get_matched(line_user_id=user_id)
+        if result:
+            reply(token, reply_matched(
+                train_id=result.get("train_id", ""),
+                car_number=result.get("car_number", ""),
+                seat_number=result.get("seat_number", ""),
+            ))
+        else:
+            reply(token, reply_not_matched_yet())
         return
 
     # セッションなし
