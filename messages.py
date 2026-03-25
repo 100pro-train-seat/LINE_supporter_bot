@@ -83,10 +83,6 @@ def reply_match_empty() -> TextSendMessage:
     return TextSendMessage(text="現在、受理できる依頼はありません。")
 
 
-def reply_match_accepted() -> TextSendMessage:
-    return TextSendMessage(text="✅ 依頼を受理しました。\nマッチングが成立したらお知らせします。")
-
-
 # ── テイカー用 ────────────────────────────────────────────────────
 
 def ask_taker_train_id() -> TextSendMessage:
