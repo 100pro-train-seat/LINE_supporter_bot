@@ -116,7 +116,7 @@ def reply_candidate_success() -> TextSendMessage:
 
 def reply_matched(train_id: str, car_number: int, seat_number: str) -> TextSendMessage:
     return TextSendMessage(
-        text=f"🎉 マッチングが成立しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車\n💺 座席位置：{seat_number}"
+        text=f"📬 リクエストが成立しました！\n\n🚇 列車番号：{train_id}\n🚃 {car_number}号車\n💺 座席位置：{seat_number}"
     )
 
 
