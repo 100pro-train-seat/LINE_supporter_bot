@@ -111,7 +111,7 @@ def reply_request_sent() -> TextSendMessage:
 
 
 def reply_candidate_success() -> TextSendMessage:
-    return TextSendMessage(text="✅ 立候補しました。\nテイカーに席番号が通知されます。")
+    return TextSendMessage(text="✅ 立候補しました。\n依頼者に席番号が通知されます。")
 
 
 def reply_matched(train_id: str, car_number: int, seat_number: str) -> TextSendMessage:
@@ -130,8 +130,29 @@ def push_give() -> TextSendMessage:
     return TextSendMessage(text="🚃 同じ電車に席に座りたい人がいます。\n「依頼確認」で依頼を確認してください。")
 
 
-def push_thanks() -> TextSendMessage:
-    return TextSendMessage(text="🙏 先ほど席を譲った人からお礼が届きました。\nありがとうございました！")
+def push_thanks(matched_count: int, point: int) -> list:
+    return [
+        TextSendMessage(text="🙏 先ほど席を譲った人からお礼が届きました。\nありがとうございました！"),
+        reply_rank(matched_count=matched_count, point=point),
+    ]
+
+
+def push_match(train_id: str, car_number, seat_number: str) -> TextSendMessage:
+    items = [_btn("✅ リクエスト完了", "✅ リクエスト完了")]
+    return TextSendMessage(
+        text=(
+            f"🎉 マッチングが成立しました！\n\n"
+            f"🚇 列車番号：{train_id}\n"
+            f"🚃 {car_number}号車\n"
+            f"💺 座席位置：{seat_number}\n\n"
+            f"席を譲ってもらったら「✅ リクエスト完了」を押してください。"
+        ),
+        quick_reply=QuickReply(items=items),
+    )
+
+
+def push_canceled() -> TextSendMessage:
+    return TextSendMessage(text="😔 先ほどのマッチがキャンセルされました。\n再度「座席リクエスト」からお試しください。")
 
 
 # ── ランク ────────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 import logging
 import os
+import threading
+import time
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
@@ -13,7 +16,11 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 from api_client import (
     accept_match,
+    cancel_match_request,
+    complete_match,
+    delete_supporter_seat,
     find_most_supporter_car,
+    get_internal_messages,
     get_last_error,
     get_match_list,
     get_matched,
@@ -29,15 +36,15 @@ from messages import (
     ask_seat_position,
     ask_taker_train_id,
     ask_train_id,
+    push_canceled,
     push_give,
+    push_match,
     push_thanks,
     reply_candidate_success,
     reply_cancelled,
     reply_default,
     reply_match_empty,
     reply_match_list,
-    reply_matched,
-    reply_not_matched_yet,
     reply_rank,
     reply_request_sent,
     reply_success,
@@ -48,24 +55,73 @@ from messages import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s – %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+POLL_INTERVAL = 5  # 秒
+
+PUSH_HANDLERS = {
+    "give":     push_give,
+    "canceled": push_canceled,
+}
+
+
+def poll_internal_messages():
+    """/internal/messages を定期的にポーリングしてLINEプッシュ通知を送る。"""
+    print("POLLING THREAD STARTED", flush=True)
+    while True:
+        time.sleep(POLL_INTERVAL)
+        try:
+            logger.info("Polling /internal/messages...")
+            messages = get_internal_messages()
+            for msg in messages:
+                uid      = msg.get("line_user_id")
+                msg_type = msg.get("type")
+                if not uid or not msg_type:
+                    continue
+                if msg_type == "match":
+                    result = get_matched(line_user_id=uid)
+                    if result:
+                        line_bot_api.push_message(uid, push_match(
+                            train_id=result.get("train_id", ""),
+                            car_number=result.get("car_number", ""),
+                            seat_number=result.get("seat_number", ""),
+                        ))
+                        logger.info("Pushed match to %s", uid)
+                elif msg_type == "thanks":
+                    profile = get_user_profile(line_user_id=uid)
+                    matched_count = profile.get("matched_count", 0) if profile else 0
+                    point = profile.get("point", 0) if profile else 0
+                    line_bot_api.push_message(uid, push_thanks(matched_count=matched_count, point=point))
+                    logger.info("Pushed thanks to %s", uid)
+                else:
+                    handler_fn = PUSH_HANDLERS.get(msg_type)
+                    if handler_fn:
+                        line_bot_api.push_message(uid, handler_fn())
+                        logger.info("Pushed %s to %s", msg_type, uid)
+        except Exception as exc:
+            logger.error("Polling error: %s", exc, exc_info=True)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    t = threading.Thread(target=poll_internal_messages, daemon=True)
+    t.start()
+    print("POLLING THREAD LAUNCHED", flush=True)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 line_bot_api = LineBotApi(os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
 handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
 sessions: dict = {}
 
-PUSH_HANDLERS = {
-    "give":   push_give,
-    "thanks": push_thanks,
-}
-
 SUPPORTER_KEYWORDS = {"乗車情報登録", "登録", "supporter", "start","regist"}
 CANDIDATE_KEYWORDS = {"問い合わせ", "探す", "席を探す", "taker", "find", "search"}
 REQUEST_KEYWORDS   = {"座席リクエスト", "リクエスト"}
 CHECK_KEYWORDS     = {"リクエスト確認","依頼確認"}
 RANK_KEYWORDS      = {"ランクを確認"}
-CANCEL_KEYWORDS    = {"キャンセル", "cancel", "中断", "やめる","終わる"}
+CANCEL_KEYWORDS         = {"キャンセル", "cancel", "中断", "やめる","終わる"}
+MATCH_CANCEL_KEYWORDS   = {"リクエストキャンセル"}
+SEAT_DELETE_KEYWORDS    = {"登録削除"}
 
 
 def reply(token, message):
@@ -117,6 +173,18 @@ def handle_message(event: MessageEvent):
         reply(token, reply_cancelled())
         return
 
+    # 依頼者：リクエストキャンセル
+    if text in MATCH_CANCEL_KEYWORDS:
+        success = cancel_match_request(line_user_id=user_id)
+        reply(token, TextSendMessage(text="✅ リクエストをキャンセルしました。") if success else TextSendMessage(text=f"❌ {get_last_error()}"))
+        return
+
+    # サポーター：座席登録削除
+    if text in SEAT_DELETE_KEYWORDS:
+        success = delete_supporter_seat(line_user_id=user_id)
+        reply(token, TextSendMessage(text="✅ 座席登録を削除しました。") if success else TextSendMessage(text=f"❌ {get_last_error()}"))
+        return
+
     # サポーター：乗車情報登録フロー開始
     if text in SUPPORTER_KEYWORDS:
         sessions[user_id] = {"step": "train_id"}
@@ -165,17 +233,10 @@ def handle_message(event: MessageEvent):
         reply(token, reply_candidate_success() if success else TextSendMessage(text=f"❌ {get_last_error()}"))
         return
 
-    # テイカー：マッチング確認
-    if text == "マッチ確認":
-        result = get_matched(line_user_id=user_id)
-        if result:
-            reply(token, reply_matched(
-                train_id=result.get("train_id", ""),
-                car_number=result.get("car_number", ""),
-                seat_number=result.get("seat_number", ""),
-            ))
-        else:
-            reply(token, reply_not_matched_yet())
+    # テイカー：リクエスト完了
+    if text == "✅ リクエスト完了":
+        success = complete_match(line_user_id=user_id)
+        reply(token, TextSendMessage(text="🙏 リクエストが完了しました！\nサポーターにお礼が届きます。") if success else TextSendMessage(text=f"❌ {get_last_error()}"))
         return
 
     # セッションなし

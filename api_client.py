@@ -96,6 +96,39 @@ def get_matched(*, line_user_id: str) -> dict | None:
     return result if result else None
 
 
+def get_internal_messages() -> list:
+    """メッセージキューからすべての通知を取得する。"""
+    result = _request("get", "/internal/messages")
+    return result.get("messages", []) if result else []
+
+
+def complete_match(*, line_user_id: str) -> bool:
+    """テイカーがマッチングを完了し、サポーターにthanks通知を送る。"""
+    token = _login(line_user_id)
+    if not token:
+        return False
+    result = _request("post", "/match/thanks", token)
+    return result is not None
+
+
+def cancel_match_request(*, line_user_id: str) -> bool:
+    """依頼者がリクエストをキャンセルする。"""
+    token = _login(line_user_id)
+    if not token:
+        return False
+    result = _request("delete", "/match/cancel", token)
+    return result is not None
+
+
+def delete_supporter_seat(*, line_user_id: str) -> bool:
+    """サポーターが座席情報を削除する。"""
+    token = _login(line_user_id)
+    if not token:
+        return False
+    result = _request("delete", "/seat/delete", token)
+    return result is not None
+
+
 def get_user_profile(*, line_user_id: str) -> dict | None:
     """ユーザーの matched_count と point を取得する。エラー時は None。"""
     token = _login(line_user_id)
