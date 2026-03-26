@@ -67,7 +67,7 @@ def ask_confirm(session: dict) -> TextSendMessage:
 def reply_success(session: dict) -> TextSendMessage:
     pos = session["seat_number"]
     return TextSendMessage(
-        text=f"✅ 乗車情報を登録しました！\n\n🚇 {session['train_id']}　{session['car_number']}号車　{pos}（{SEAT_POSITIONS[pos]}）"
+        text=f"✅ 乗車情報を登録しました！\n\n🚇 {session['train_id']}　{session['car_number']}号車　{pos}（{SEAT_POSITIONS[pos]}）\n\n座席登録を削除する場合は「登録削除」と入力してください。"
     )
 
 
@@ -107,7 +107,7 @@ def reply_taker_not_found(train_id: str) -> TextSendMessage:
 
 
 def reply_request_sent() -> TextSendMessage:
-    return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。")
+    return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。\n\nリクエストをキャンセルする場合は「リクエストキャンセル」と入力してください。")
 
 
 def reply_candidate_success() -> TextSendMessage:
