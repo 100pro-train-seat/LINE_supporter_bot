@@ -110,8 +110,37 @@ def reply_request_sent() -> TextSendMessage:
     return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。\n\nリクエストをキャンセルする場合は「リクエストキャンセル」と入力してください。")
 
 
-def reply_candidate_success() -> TextSendMessage:
-    return TextSendMessage(text="✅ 立候補しました。\n依頼者に席番号が通知されます。")
+def _color_card() -> FlexSendMessage:
+    bubble = BubbleContainer(
+        body=BoxComponent(
+            layout="vertical",
+            background_color="#3498DB",
+            contents=[
+                TextComponent(
+                    text="🔵",
+                    size="5xl",
+                    align="center",
+                    gravity="center",
+                ),
+                TextComponent(
+                    text="この色を相手に見せてください",
+                    color="#FFFFFF",
+                    weight="bold",
+                    align="center",
+                    wrap=True,
+                    margin="md",
+                ),
+            ],
+        )
+    )
+    return FlexSendMessage(alt_text="本人確認カラー: 青", contents=bubble)
+
+
+def reply_candidate_success() -> list:
+    return [
+        TextSendMessage(text="✅ 立候補しました。\n依頼者に席番号が通知されます。\n\n下の色を依頼者に見せて本人確認してください。"),
+        _color_card(),
+    ]
 
 
 def reply_matched(train_id: str, car_number: int, seat_number: str) -> TextSendMessage:
@@ -137,18 +166,21 @@ def push_thanks(matched_count: int, point: int) -> list:
     ]
 
 
-def push_match(train_id: str, car_number, seat_number: str) -> TextSendMessage:
+def push_match(train_id: str, car_number, seat_number: str) -> list:
     items = [_btn("✅ リクエスト完了", "✅ リクエスト完了")]
-    return TextSendMessage(
-        text=(
-            f"🎉 マッチングが成立しました！\n\n"
-            f"🚇 列車番号：{train_id}\n"
-            f"🚃 {car_number}号車\n"
-            f"💺 座席位置：{seat_number}\n\n"
-            f"席を譲ってもらったら「✅ リクエスト完了」を押してください。"
+    return [
+        TextSendMessage(
+            text=(
+                f"🎉 マッチングが成立しました！\n\n"
+                f"🚇 列車番号：{train_id}\n"
+                f"🚃 {car_number}号車\n"
+                f"💺 座席位置：{seat_number}\n\n"
+                f"下の色をサポーターに見せて本人確認し、席を譲ってもらったら「✅ リクエスト完了」を押してください。"
+            ),
+            quick_reply=QuickReply(items=items),
         ),
-        quick_reply=QuickReply(items=items),
-    )
+        _color_card(),
+    ]
 
 
 def push_canceled() -> TextSendMessage:
