@@ -37,7 +37,6 @@ from messages import (
     ask_taker_train_id,
     ask_train_id,
     push_canceled,
-    push_give,
     push_match,
     push_thanks,
     reply_candidate_success,
@@ -58,7 +57,6 @@ logger = logging.getLogger(__name__)
 POLL_INTERVAL = 5  # 秒
 
 PUSH_HANDLERS = {
-    "give":     push_give,
     "canceled": push_canceled,
 }
 
@@ -76,7 +74,12 @@ def poll_internal_messages():
                 msg_type = msg.get("type")
                 if not uid or not msg_type:
                     continue
-                if msg_type == "match":
+                if msg_type == "give":
+                    asking = get_match_list(line_user_id=uid)
+                    if asking:
+                        line_bot_api.push_message(uid, reply_match_list(asking))
+                        logger.info("Pushed give(match list) to %s", uid)
+                elif msg_type == "match":
                     result = get_matched(line_user_id=uid)
                     if result:
                         line_bot_api.push_message(uid, push_match(

@@ -22,7 +22,12 @@ def _request(method: str, path: str, token: str = "", **kwargs):
     try:
         with httpx.Client(timeout=10.0) as client:
             response = getattr(client, method)(f"{BASE_URL}{path}", headers=headers, **kwargs)
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception:
+            _last_error = f"サーバーエラーが発生しました。（{response.status_code}）"
+            logger.error("%s %s error(%s): empty or invalid response body", method.upper(), path, response.status_code)
+            return None
         if not response.is_success or not data.get("ok", True):
             _last_error = data.get("error", "エラーが発生しました。")
             logger.error("%s %s error(%s): %s", method.upper(), path, response.status_code, _last_error)
