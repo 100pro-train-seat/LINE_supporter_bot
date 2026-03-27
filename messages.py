@@ -32,8 +32,8 @@ def _btn(label: str, text: str) -> QuickReplyButton:
 
 # ── サポーター用 ──────────────────────────────────────────────────
 
-def ask_train_id() -> TextSendMessage:
-    return TextSendMessage(text="🚇 乗車する列車番号を入力してください\n（例：3000A）")
+def ask_station_keyword() -> TextSendMessage:
+    return TextSendMessage(text="🚉 乗車する駅名を入力してください\n（例：横浜）")
 
 
 def ask_carriage() -> TextSendMessage:
@@ -54,9 +54,10 @@ def ask_seat_position() -> list:
 
 def ask_confirm(session: dict) -> TextSendMessage:
     pos = session["seat_number"]
+    train_display = session.get("train_display", session["train_id"])
     body = (
         f"📋 以下の内容で登録しますか？\n\n"
-        f"🚇 列車番号：{session['train_id']}\n"
+        f"🚇 列車：{train_display}\n"
         f"🚃 号車：{session['car_number']}号車\n"
         f"💺 位置：{pos}（{SEAT_POSITIONS[pos]}）"
     )
@@ -66,8 +67,9 @@ def ask_confirm(session: dict) -> TextSendMessage:
 
 def reply_success(session: dict) -> TextSendMessage:
     pos = session["seat_number"]
+    train_display = session.get("train_display", session["train_id"])
     return TextSendMessage(
-        text=f"✅ 乗車情報を登録しました！\n\n🚇 {session['train_id']}　{session['car_number']}号車　{pos}（{SEAT_POSITIONS[pos]}）\n\n座席登録を削除する場合は「登録削除」と入力してください。"
+        text=f"✅ 乗車情報を登録しました！\n\n🚇 {train_display}　{session['car_number']}号車　{pos}（{SEAT_POSITIONS[pos]}）\n\n座席登録を削除する場合は「登録削除」と入力してください。"
     )
 
 
@@ -85,8 +87,30 @@ def reply_match_empty() -> TextSendMessage:
 
 # ── テイカー用 ────────────────────────────────────────────────────
 
-def ask_taker_train_id() -> TextSendMessage:
-    return TextSendMessage(text="🔍 乗車する列車番号を入力してください\n（例：3000A）")
+def ask_station_select(stations: list) -> TextSendMessage:
+    lines = "\n".join(f"{i+1}. {s['name']}" for i, s in enumerate(stations))
+    items = [_btn(str(i+1), str(i+1)) for i in range(len(stations))]
+    return TextSendMessage(
+        text=f"🚉 駅を選んでください\n\n{lines}",
+        quick_reply=QuickReply(items=items),
+    )
+
+
+def ask_train_select(trains: list) -> TextSendMessage:
+    lines = "\n".join(f"{i+1}. {t['time'][:5]} → {t['destination']}" for i, t in enumerate(trains))
+    items = [_btn(f"{t['time'][:5]}→{t['destination']}"[:20], str(i+1)) for i, t in enumerate(trains)]
+    return TextSendMessage(
+        text=f"🚃 乗車する列車を選んでください\n\n{lines}",
+        quick_reply=QuickReply(items=items),
+    )
+
+
+def reply_station_not_found() -> TextSendMessage:
+    return TextSendMessage(text="😔 駅が見つかりませんでした。\n別のキーワードで入力してください。")
+
+
+def reply_train_not_found() -> TextSendMessage:
+    return TextSendMessage(text="😔 直近の列車が見つかりませんでした。")
 
 
 def ask_request_carriage() -> TextSendMessage:

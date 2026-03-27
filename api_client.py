@@ -141,3 +141,21 @@ def get_user_profile(*, line_user_id: str) -> dict | None:
         return None
     result = _request("get", "/user/profile", token)
     return result if result else None
+
+
+def search_stations(*, line_user_id: str, keyword: str) -> list | None:
+    """駅名キーワードで駅を検索する。エラー時は None。"""
+    token = _login(line_user_id)
+    if not token:
+        return None
+    result = _request("get", "/timetable/search", token, params={"keyword": keyword})
+    return result.get("stations") if result else None
+
+
+def get_trains(*, line_user_id: str, station_id: int) -> list | None:
+    """指定駅の直近5本の列車を取得する。エラー時は None。"""
+    token = _login(line_user_id)
+    if not token:
+        return None
+    result = _request("get", "/timetable/trains", token, params={"station_id": station_id})
+    return result.get("trains") if result else None

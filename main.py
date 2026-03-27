@@ -24,8 +24,10 @@ from api_client import (
     get_last_error,
     get_match_list,
     get_matched,
+    get_trains,
     get_user_profile,
     register_supporter_seat,
+    search_stations,
     send_seat_request,
 )
 from messages import (
@@ -34,8 +36,9 @@ from messages import (
     ask_confirm,
     ask_request_carriage,
     ask_seat_position,
-    ask_taker_train_id,
-    ask_train_id,
+    ask_station_keyword,
+    ask_station_select,
+    ask_train_select,
     push_canceled,
     push_match,
     push_thanks,
@@ -46,9 +49,11 @@ from messages import (
     reply_match_list,
     reply_rank,
     reply_request_sent,
+    reply_station_not_found,
     reply_success,
     reply_taker_not_found,
     reply_taker_result,
+    reply_train_not_found,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s – %(message)s")
@@ -190,20 +195,20 @@ def handle_message(event: MessageEvent):
 
     # サポーター：乗車情報登録フロー開始
     if text in SUPPORTER_KEYWORDS:
-        sessions[user_id] = {"step": "train_id"}
-        reply(token, ask_train_id())
+        sessions[user_id] = {"step": "station_keyword", "flow": "supporter"}
+        reply(token, ask_station_keyword())
         return
 
-    # テイカー：候補問い合わせフロー開始
+    # 依頼者：候補問い合わせフロー開始
     if text in CANDIDATE_KEYWORDS:
-        sessions[user_id] = {"step": "taker_train_id"}
-        reply(token, ask_taker_train_id())
+        sessions[user_id] = {"step": "station_keyword", "flow": "taker"}
+        reply(token, ask_station_keyword())
         return
 
-    # テイカー：座席リクエストフロー開始
+    # 依頼者：座席リクエストフロー開始
     if text in REQUEST_KEYWORDS:
-        sessions[user_id] = {"step": "request_train_id"}
-        reply(token, ask_train_id())
+        sessions[user_id] = {"step": "station_keyword", "flow": "request"}
+        reply(token, ask_station_keyword())
         return
 
     # サポーター：ランク確認
@@ -248,23 +253,63 @@ def handle_message(event: MessageEvent):
         return
 
     step = session["step"]
+    flow = session.get("flow")
 
-    # ── 候補問い合わせフロー ──────────────────────────────────────
-    if step == "taker_train_id":
-        train_id   = text
-        sessions.pop(user_id, None)
-        car_number = find_most_supporter_car(line_user_id=user_id, train_id=train_id)
-        if car_number is not None:
-            reply(token, reply_taker_result(train_id, car_number))
+    # ── 駅名検索（共通） ──────────────────────────────────────────
+    if step == "station_keyword":
+        stations = search_stations(line_user_id=user_id, keyword=text)
+        if stations is None:
+            reply_error(token)
+        elif len(stations) == 0:
+            reply(token, reply_station_not_found())
         else:
-            reply(token, reply_taker_not_found(train_id))
+            session["stations"] = stations[:5]
+            session["step"]     = "station_select"
+            reply(token, ask_station_select(session["stations"]))
+
+    # ── 駅選択（共通） ────────────────────────────────────────────
+    elif step == "station_select":
+        stations = session.get("stations", [])
+        if text.isdigit() and 1 <= int(text) <= len(stations):
+            station = stations[int(text) - 1]
+            trains = get_trains(line_user_id=user_id, station_id=station["id"])
+            if trains is None:
+                reply_error(token)
+            elif len(trains) == 0:
+                reply(token, reply_train_not_found())
+            else:
+                session["trains"] = trains
+                session["step"]   = "train_select"
+                reply(token, ask_train_select(trains))
+        else:
+            reply(token, ask_station_select(stations))
+
+    # ── 列車選択（共通） ──────────────────────────────────────────
+    elif step == "train_select":
+        trains = session.get("trains", [])
+        if text.isdigit() and 1 <= int(text) <= len(trains):
+            train = trains[int(text) - 1]
+            session["train_id"]      = train["train_id"]
+            session["train_display"] = f"{train['time'][:5]} → {train['destination']}"
+            if flow == "supporter":
+                session["step"] = "carriage"
+                reply(token, ask_carriage())
+            elif flow == "taker":
+                train_id = train["train_id"]
+                display  = session["train_display"]
+                sessions.pop(user_id, None)
+                car_number = find_most_supporter_car(line_user_id=user_id, train_id=train_id)
+                if car_number is not None:
+                    reply(token, reply_taker_result(display, car_number))
+                else:
+                    reply(token, reply_taker_not_found(display))
+            elif flow == "request":
+                session["step"] = "request_carriage"
+                reply(token, ask_request_carriage())
+        else:
+            reply(token, ask_train_select(trains))
 
     # ── 座席リクエストフロー ──────────────────────────────────────
-    elif step == "request_train_id":
-        session["train_id"] = text
-        session["step"]     = "request_carriage"
-        reply(token, ask_request_carriage())
-
     elif step == "request_carriage":
         if text.isdigit() and 1 <= int(text) <= 6:
             success = send_seat_request(
@@ -278,11 +323,6 @@ def handle_message(event: MessageEvent):
             reply(token, ask_request_carriage())
 
     # ── サポーター登録フロー ──────────────────────────────────────
-    elif step == "train_id":
-        session["train_id"] = text
-        session["step"]     = "carriage"
-        reply(token, ask_carriage())
-
     elif step == "carriage":
         if text.isdigit() and 1 <= int(text) <= 6:
             session["car_number"] = text
@@ -312,8 +352,8 @@ def handle_message(event: MessageEvent):
             reply(token, reply_success(session) if success else TextSendMessage(text=f"❌ {get_last_error()}"))
 
         elif text == "🔄 やり直す":
-            sessions[user_id] = {"step": "train_id"}
-            reply(token, ask_train_id())
+            sessions[user_id] = {"step": "station_keyword", "flow": "supporter"}
+            reply(token, ask_station_keyword())
 
         else:
             reply(token, TextSendMessage(text='「✅ 登録する」または「🔄 やり直す」を選んでください。'))
