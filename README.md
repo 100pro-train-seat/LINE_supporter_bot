@@ -25,7 +25,9 @@
 ### 乗車情報登録（サポーター）
 ```
 「登録」と送信
-  → 列車番号を入力（例：3000A）
+  → 駅名を入力（例：横浜）
+  → 駅を選択（最大5件）
+  → 列車を選択（直近5本・時刻と行先で表示）
   → 号車を選択（1〜6号車）
   → 座席位置を選択（A〜H）
   → 確認画面 → 「✅ 登録する」
@@ -35,14 +37,18 @@
 ### 候補問い合わせ（依頼者）
 ```
 「問い合わせ」と送信
-  → 列車番号を入力
+  → 駅名を入力（例：横浜）
+  → 駅を選択（最大5件）
+  → 列車を選択（直近5本）
   → サポーターが最も多い号車番号を返答
 ```
 
 ### 座席リクエスト（依頼者）
 ```
 「座席リクエスト」と送信
-  → 列車番号を入力
+  → 駅名を入力（例：横浜）
+  → 駅を選択（最大5件）
+  → 列車を選択（直近5本）
   → 号車を選択
   → 同じ号車のサポーターに依頼を送信
   → マッチング成立時にプッシュ通知で自動お知らせ
@@ -50,7 +56,8 @@
 
 ### マッチング完了（依頼者）
 ```
-マッチング成立通知に記載のサポーター情報を確認
+マッチング成立通知＋本人確認カラー（青）が届く
+  → 同じ青色カードをサポーターに見せて本人確認
   → 席を譲ってもらったら「✅ リクエスト完了」ボタンを押す
   → POST /match/thanks でマッチング完了
   → サポーターにお礼通知が届く
@@ -64,6 +71,7 @@
   → 「依頼 #XX」を選択
   → POST /match/candidate で立候補
   → 依頼者にマッチング成立通知が届く
+  → 本人確認カラー（青）が表示される（依頼者と同じ色）
 ```
 
 ### ランク確認（サポーター）
@@ -182,19 +190,30 @@ nano の保存方法：`Ctrl+X` → `Y` → `Enter`
 
 ---
 
-## 起動方法（VPS上で常時動かす）
+## 起動方法（VPS・systemd で常時稼働）
+
+botとngrokはsystemdサービスとして登録済みです。VPS起動時・クラッシュ時に自動で再起動されます。
+
+### サービスの操作
 
 ```bash
-cd ~/LINE_supporter_bot
-source .venv/bin/activate
-nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
-nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
+# 状態確認
+sudo systemctl status linebot ngrok
+
+# 再起動
+sudo systemctl restart linebot
+
+# ログ確認
+sudo journalctl -u linebot -n 50 --no-pager
 ```
 
-### ログを確認する
+### コード更新時
 
 ```bash
-cat ~/LINE_supporter_bot/nohup.out
+ssh train@160.251.236.85
+cd ~/LINE_supporter_bot
+git pull
+sudo systemctl restart linebot
 ```
 
 ---
@@ -215,12 +234,13 @@ https://heavenly-nonvascularly-georgianne.ngrok-free.dev/webhook
 
 ## VPS が再起動した場合
 
+systemdにより自動で起動します。手動操作は不要です。
+
+起動しない場合は以下で確認：
+
 ```bash
 ssh train@160.251.236.85
-cd ~/LINE_supporter_bot
-source .venv/bin/activate
-nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
-nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
+sudo systemctl status linebot ngrok
 ```
 
 ---
@@ -238,9 +258,12 @@ nohup ngrok http --url=heavenly-nonvascularly-georgianne.ngrok-free.dev 8000 &
 | ランク確認（サポーター） | ✅ 動作中 |
 | マッチング完了・お礼送信（依頼者） | ✅ 動作中 |
 | プッシュ通知 give（依頼リスト自動表示） | ✅ 動作中 |
-| プッシュ通知 match（マッチング成立通知） | ✅ 動作中 |
+| プッシュ通知 match（マッチング成立通知＋本人確認カラー） | ✅ 動作中 |
 | プッシュ通知 thanks（ランク表示付きお礼） | ✅ 動作中 |
 | プッシュ通知 canceled（キャンセル通知） | ✅ 動作中 |
+| 時刻表から列車を選択（駅名検索→列車選択） | ✅ 動作中 |
+| 本人確認カラー（マッチング成立時に青色表示） | ✅ 動作中 |
+| VPS systemd 自動再起動 | ✅ 設定済み |
 
 ---
 
