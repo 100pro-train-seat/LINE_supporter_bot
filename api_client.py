@@ -22,6 +22,8 @@ def _request(method: str, path: str, token: str = "", **kwargs):
     try:
         with httpx.Client(timeout=10.0) as client:
             response = getattr(client, method)(f"{BASE_URL}{path}", headers=headers, **kwargs)
+        if response.status_code == 204:
+            return {"ok": True}
         try:
             data = response.json()
         except Exception:
