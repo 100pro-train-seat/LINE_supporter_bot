@@ -134,7 +134,7 @@ def reply_request_sent() -> TextSendMessage:
     return TextSendMessage(text="✅ 座席リクエストを送信しました。\nサポーターからの返答をお待ちください。\n\nリクエストをキャンセルする場合は「リクエストキャンセル」と入力してください。")
 
 
-def _color_card() -> FlexSendMessage:
+def _color_card(quick_reply=None) -> FlexSendMessage:
     bubble = BubbleContainer(
         size="giga",
         body=BoxComponent(
@@ -163,7 +163,7 @@ def _color_card() -> FlexSendMessage:
             ],
         )
     )
-    return FlexSendMessage(alt_text="本人確認カラー: 青", contents=bubble)
+    return FlexSendMessage(alt_text="本人確認カラー: 青", contents=bubble, quick_reply=quick_reply)
 
 
 def reply_candidate_success() -> list:
@@ -207,9 +207,8 @@ def push_match(train_id: str, car_number, seat_number: str) -> list:
                 f"💺 座席位置：{seat_number}\n\n"
                 f"下の色をサポーターに見せて本人確認し、席を譲ってもらったら「✅ リクエスト完了」を押してください。"
             ),
-            quick_reply=QuickReply(items=items),
         ),
-        _color_card(),
+        _color_card(quick_reply=QuickReply(items=items)),
     ]
 
 
