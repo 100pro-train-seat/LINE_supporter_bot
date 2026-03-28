@@ -142,7 +142,8 @@ def _color_card(quick_reply=None) -> FlexSendMessage:
             background_color="#0066FF",
             justify_content="center",
             align_items="center",
-            padding_all="60px",
+            height="500px",
+            padding_all="40px",
             contents=[
                 BoxComponent(
                     layout="horizontal",
