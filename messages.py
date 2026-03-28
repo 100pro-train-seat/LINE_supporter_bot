@@ -136,23 +136,29 @@ def reply_request_sent() -> TextSendMessage:
 
 def _color_card() -> FlexSendMessage:
     bubble = BubbleContainer(
+        size="giga",
         body=BoxComponent(
             layout="vertical",
-            background_color="#3498DB",
+            background_color="#0066FF",
+            justify_content="center",
+            align_items="center",
+            padding_all="60px",
             contents=[
-                TextComponent(
-                    text="🔵",
-                    size="5xl",
-                    align="center",
-                    gravity="center",
+                BoxComponent(
+                    layout="horizontal",
+                    contents=[
+                        TextComponent(text="🛜", size="5xl", align="center", flex=1),
+                        TextComponent(text="🛜", size="5xl", align="center", flex=1),
+                    ],
                 ),
                 TextComponent(
-                    text="この色を相手に見せてください",
+                    text="青い画面を\n相手に見せてください",
                     color="#FFFFFF",
                     weight="bold",
+                    size="xxl",
                     align="center",
                     wrap=True,
-                    margin="md",
+                    margin="xxl",
                 ),
             ],
         )
