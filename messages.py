@@ -152,7 +152,7 @@ def _color_card(quick_reply=None) -> FlexSendMessage:
                     ],
                 ),
                 TextComponent(
-                    text="青い画面を\n相手に見せてください",
+                    text="このメッセージを\n相手に見せてください",
                     color="#FFFFFF",
                     weight="bold",
                     size="xxl",
@@ -168,7 +168,7 @@ def _color_card(quick_reply=None) -> FlexSendMessage:
 
 def reply_candidate_success() -> list:
     return [
-        TextSendMessage(text="✅ 立候補しました。\n依頼者に席番号が通知されます。\n\n下の色を依頼者に見せて本人確認してください。"),
+        TextSendMessage(text="✅ 立候補しました。\n依頼者に席番号が通知されます。\n\n下の青いメッセージを依頼者に見せて本人確認してください。"),
         _color_card(),
     ]
 
@@ -205,7 +205,7 @@ def push_match(train_id: str, car_number, seat_number: str) -> list:
                 f"🚇 列車番号：{train_id}\n"
                 f"🚃 {car_number}号車\n"
                 f"💺 座席位置：{seat_number}\n\n"
-                f"下の色をサポーターに見せて本人確認し、席を譲ってもらったら「✅ リクエスト完了」を押してください。"
+                f"下の青いメッセージをサポーターに見せて本人確認し、席を譲ってもらったら「✅ リクエスト完了」を押してください。"
             ),
         ),
         _color_card(quick_reply=QuickReply(items=items)),
