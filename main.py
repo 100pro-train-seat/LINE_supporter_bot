@@ -88,7 +88,6 @@ def poll_internal_messages():
                     result = get_matched(line_user_id=uid)
                     if result:
                         line_bot_api.push_message(uid, push_match(
-                            train_id=result.get("train_id", ""),
                             car_number=result.get("car_number", ""),
                             seat_number=result.get("seat_number", ""),
                         ))

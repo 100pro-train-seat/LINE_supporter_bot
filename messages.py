@@ -197,13 +197,12 @@ def push_thanks(matched_count: int, point: int) -> list:
     ]
 
 
-def push_match(train_id: str, car_number, seat_number: str) -> list:
+def push_match(car_number, seat_number: str) -> list:
     items = [_btn("✅ リクエスト完了", "✅ リクエスト完了")]
     return [
         TextSendMessage(
             text=(
                 f"🎉 マッチングが成立しました！\n\n"
-                f"🚇 列車番号：{train_id}\n"
                 f"🚃 {car_number}号車\n"
                 f"💺 座席位置：{seat_number}\n\n"
                 f"下の青いメッセージをサポーターに見せて本人確認し、席を譲ってもらったら「✅ リクエスト完了」を押してください。"
